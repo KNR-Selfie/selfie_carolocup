@@ -200,6 +200,6 @@ include_directories(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(selfie_stm32_bridge src/usb_node.cpp src/usb.cpp)
+add_executable(selfie_stm32_bridge src/main.cpp src/usb.cpp)
 target_link_libraries(selfie_stm32_bridge ${catkin_LIBRARIES})
 add_dependencies(selfie_stm32_bridge selfie_usb_generate_messages_cpp)
