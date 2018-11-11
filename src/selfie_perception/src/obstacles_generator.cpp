@@ -6,8 +6,10 @@ ObstaclesGenerator::ObstaclesGenerator(const ros::NodeHandle& nh, const ros::Nod
     pnh_(pnh),
     max_distance_(1.5),
     min_distance_(0.03),
-    line_max_range_difference_(0.025),
-    line_max_slope_difference_(0.3),
+    line_max_range_difference_(0.04),
+    line_max_slope_difference_(0.8),
+    line_min_slope_difference_(0.12),
+    line_slope_difference_ratio_(20),
     line_min_points_(10),
     visualize_(true)
 {
@@ -26,6 +28,8 @@ bool ObstaclesGenerator::init()
     pnh_.getParam("min_distance",min_distance_);
     pnh_.getParam("line_max_range_difference",line_max_range_difference_);
     pnh_.getParam("line_max_slope_difference",line_max_slope_difference_);
+    pnh_.getParam("line_min_slope_difference",line_min_slope_difference_);
+    pnh_.getParam("line_slope_difference_ratio",line_slope_difference_ratio_);
     pnh_.getParam("line_min_points",line_min_points_);
     pnh_.getParam("visualize",visualize_);
 
@@ -57,6 +61,7 @@ void ObstaclesGenerator::generateLines()
     int start_point_index = 0;
     bool reset_params = false;
     Point act_point;
+    float line_slope_difference = line_max_slope_difference_;
 
     for(float act_angle = scan_.angle_min + scan_.angle_increment; act_angle <= scan_.angle_max; act_angle += scan_.angle_increment)
     {
@@ -73,7 +78,9 @@ void ObstaclesGenerator::generateLines()
                 }
                 else 
                 {
-                    if(std::abs(avg_act_line_slope - getSlope(start_point, act_point)) <= line_max_slope_difference_)
+                    if(line_slope_difference > line_min_slope_difference_)
+                        line_slope_difference = (line_min_slope_difference_ - line_max_slope_difference_) / line_slope_difference_ratio_ * points_in_line + line_max_slope_difference_;
+                    if(std::abs(avg_act_line_slope - getSlope(start_point, act_point)) <= line_slope_difference)
                     {
                         act_line_slope_sum += getSlope(start_point, act_point);
                         avg_act_line_slope = act_line_slope_sum / points_in_line;
@@ -107,6 +114,7 @@ void ObstaclesGenerator::generateLines()
             start_point_index = act_angle_index;
             points_in_line = 0;
             act_line_slope_sum = 0;
+            line_slope_difference = line_max_slope_difference_;
             reset_params = false;
         }
         act_angle_index ++;

@@ -55,6 +55,8 @@ private:
     float min_distance_;
     float line_max_range_difference_;
     float line_max_slope_difference_;
+    float line_min_slope_difference_;
+    float line_slope_difference_ratio_;
     int line_min_points_;
     bool visualize_;
     
