@@ -40,7 +40,7 @@ private:
     ros::NodeHandle pnh_;
     ros::Subscriber scan_sub_;
     ros::Publisher obstacles_pub_;
-    ros::Publisher visualizeLines_pub_;
+    ros::Publisher visualization_lines_pub_;
 
     std::vector <Line> line_array_;
     std::vector <Obstacle> obstacle_array_;
@@ -52,6 +52,7 @@ private:
     void visualizeLines();
 
     float max_distance_;
+    float min_distance_;
     float line_max_range_difference_;
     float line_max_slope_difference_;
     int line_min_points_;
