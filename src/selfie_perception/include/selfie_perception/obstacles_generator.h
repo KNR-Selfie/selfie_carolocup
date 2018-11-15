@@ -5,6 +5,7 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Point.h>
@@ -49,15 +50,17 @@ private:
     void generateLines();
     Point getXY(float &angle, float &range);
     float getSlope(Point &p1, Point &p2);
+    float getDistance(Point &p1, Point &p2);
     void visualizeLines();
+    void printInfoParams();
 
-    float max_distance_;
-    float min_distance_;
+    float max_range_;
+    float min_range_;
     float line_max_range_difference_;
     float line_max_slope_difference_;
     float line_min_slope_difference_;
     float line_slope_difference_ratio_;
-    int line_min_points_;
+    float line_min_length_;
     bool visualize_;
     
 };
