@@ -53,6 +53,7 @@ private:
     float getDistance(Point &p1, Point &p2);
     void visualizeLines();
     void printInfoParams();
+    void merge_lines();
 
     float max_range_;
     float min_range_;
