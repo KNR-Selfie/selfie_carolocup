@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  selfie_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -197,3 +198,14 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+include_directories(include ${catkin_INCLUDE_DIRS})
+
+add_executable(path_planner_node src/path_planner_node.cpp)
+target_link_libraries(path_planner_node ${catkin_LIBRARIES})
+
+
+add_executable(test_node src/test_node.cpp)
+target_link_libraries(test_node ${catkin_LIBRARIES})
+
