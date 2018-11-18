@@ -4,7 +4,6 @@ import rospy
 
 from std_msgs.msg import Float32
 from dynamic_reconfigure.client import Client
-from selfie_control.cfg import ControlConfig
 
 UPDATE_RATE = 50
 

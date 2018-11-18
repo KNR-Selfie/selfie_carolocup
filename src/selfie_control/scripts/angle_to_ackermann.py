@@ -5,7 +5,7 @@ import rospy
 from std_msgs.msg import Float64
 from ackermann_msgs.msg import AckermannDriveStamped
 from dynamic_reconfigure.server import Server
-from selfie_control.cfg import ControlConfig
+from selfie_control.cfg import SpeedConfig
 
 UPDATE_RATE = 50
 
@@ -29,7 +29,7 @@ def config_callback(config, level):
 if __name__ == '__main__':
     rospy.init_node('selfie_angle_to_ackermann')
 
-    srv = Server(ControlConfig, config_callback)
+    srv = Server(SpeedConfig, config_callback)
 
     global drive_pub
     drive_pub = rospy.Publisher('drive', AckermannDriveStamped, queue_size=1)
