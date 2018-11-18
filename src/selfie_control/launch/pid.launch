@@ -1,0 +1,20 @@
+<launch>
+  <node name="position_pid" pkg="pid" type="controller" >
+    <param name="Kp" value="0.1" />
+    <param name="Ki" value="0.05" />
+    <param name="Kd" value="0.15" />
+    <param name="upper_limit" value="0.785" />
+    <param name="lower_limit" value="-0.785" />
+    <param name="windup_limit" value="10" />
+    <param name="max_loop_frequency" value="100.0" />
+    <param name="min_loop_frequency" value="100.0" />
+
+    <remap from="state" to="steering_state" />
+    <remap from="control_effort" to="steering_angle" />
+  </node>
+
+  <node name="const_setpoint" pkg="selfie_control" type="const_float64.py" >
+    <param name="topic" value="setpoint" />
+    <param name="value" value="0.0" />
+  </node>
+</launch>
