@@ -10,6 +10,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Polygon.h>
 #include <visualization_msgs/Marker.h>
+#include <selfie_msgs/PolygonArray.h>
 
 struct Point
 {
@@ -41,7 +42,7 @@ private:
     ros::Publisher visualization_obstacles_pub_;
 
     std::vector <Line> line_array_;
-    std::vector <geometry_msgs::Polygon> obstacle_array_;
+    selfie_msgs::PolygonArray obstacle_array_;
     sensor_msgs::LaserScan scan_;
     void laserScanCallback(const sensor_msgs::LaserScan& msg);
     void generateLines();
@@ -63,6 +64,8 @@ private:
     float line_slope_difference_ratio_;
     float line_min_length_;
     bool visualize_;
+    std::string visualization_frame_;
+    std::string obstacles_frame_;
     
 };
 

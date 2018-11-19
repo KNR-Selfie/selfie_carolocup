@@ -10,14 +10,17 @@ ObstaclesGenerator::ObstaclesGenerator(const ros::NodeHandle& nh, const ros::Nod
     line_min_slope_difference_(0.05),
     line_slope_difference_ratio_(0.06),
     line_min_length_(0.015),
+    obstacles_frame_("laser"),
+    visualization_frame_("laser"),
     visualize_(true)
 {
-    //obstacles_pub_ = nh_.advertise<std_msgs::Float32[8]>("obstacles", 10);
+    obstacles_pub_ = nh_.advertise<selfie_msgs::PolygonArray>("obstacles", 10);
 }
 
 ObstaclesGenerator::~ObstaclesGenerator()
 {
-    obstacle_array_.clear();
+    obstacle_array_.polygons.clear();
+    line_array_.clear();
 }
 
 bool ObstaclesGenerator::init()
@@ -31,6 +34,8 @@ bool ObstaclesGenerator::init()
     pnh_.getParam("line_slope_difference_ratio",line_slope_difference_ratio_);
     pnh_.getParam("line_min_length",line_min_length_);
     pnh_.getParam("visualize",visualize_);
+    pnh_.getParam("obstacles_frame",obstacles_frame_);
+    pnh_.getParam("visualization_frame",visualization_frame_);
 
     if(visualize_)
     {
@@ -168,7 +173,7 @@ void ObstaclesGenerator::visualizeLines()
 {
     visualization_msgs::Marker marker;
 
-    marker.header.frame_id = "laser";
+    marker.header.frame_id = visualization_frame_;
     marker.header.stamp = ros::Time::now();
     marker.ns = "line";
     marker.type = visualization_msgs::Marker::LINE_LIST;
@@ -210,6 +215,8 @@ void ObstaclesGenerator::printInfoParams()
     ROS_INFO("line_slope_difference_ratio: %.3f",line_slope_difference_ratio_);
     ROS_INFO("line_min_length: %.3f",line_min_length_);
     ROS_INFO("visualize: %d",visualize_);
+    ROS_INFO("obstacles_frame: %s",obstacles_frame_.c_str());
+    ROS_INFO("visualization_frame: %s",visualization_frame_.c_str());
 }
 
 void ObstaclesGenerator::mergeLines()
@@ -236,7 +243,9 @@ void ObstaclesGenerator::mergeLines()
 
 void ObstaclesGenerator::generateObstacles()
 {
-    obstacle_array_.clear();
+    obstacle_array_.polygons.clear();
+    obstacle_array_.header.stamp = ros::Time::now();
+    obstacle_array_.header.frame_id = obstacles_frame_;
     if (!line_array_.empty())
     {
         float distance = 0;
@@ -265,7 +274,7 @@ void ObstaclesGenerator::generateObstacles()
                 p.x = line_array_[i + 1].end_point.x;
                 p.y = line_array_[i + 1].end_point.y;
                 obstacle.points.push_back(p);
-                obstacle_array_.push_back(obstacle);
+                obstacle_array_.polygons.push_back(obstacle);
                 obstacle.points.clear();
                 i++;
             }
@@ -297,7 +306,7 @@ void ObstaclesGenerator::generateObstacles()
                 p.y = line_array_[i].start_point.y - add_y;
                 obstacle.points.push_back(p);
                 
-                obstacle_array_.push_back(obstacle);
+                obstacle_array_.polygons.push_back(obstacle);
                 obstacle.points.clear();
             }
         }
@@ -332,18 +341,18 @@ void ObstaclesGenerator::generateObstacles()
                 p.y = line_array_[i].start_point.y - add_y;
                 obstacle.points.push_back(p);
                 
-                obstacle_array_.push_back(obstacle);
+                obstacle_array_.polygons.push_back(obstacle);
                 obstacle.points.clear();
         }
     }
-    //publish obstacles
+    obstacles_pub_.publish(obstacle_array_);
 }
 
 void ObstaclesGenerator::visualizeObstacles()
 {
     visualization_msgs::Marker marker;
 
-    marker.header.frame_id = "laser";
+    marker.header.frame_id = visualization_frame_;
     marker.header.stamp = ros::Time::now();
     marker.ns = "line";
     marker.type = visualization_msgs::Marker::LINE_LIST;
@@ -363,39 +372,39 @@ void ObstaclesGenerator::visualizeObstacles()
     marker_point.z = 0;
 
     int i = 0;
-    for(int i = 0; i < obstacle_array_.size(); i++)
+    for(int i = 0; i < obstacle_array_.polygons.size(); i++)
     {
         
-        marker_point.x = obstacle_array_[i].points[0].x;
-        marker_point.y = obstacle_array_[i].points[0].y;
+        marker_point.x = obstacle_array_.polygons[i].points[0].x;
+        marker_point.y = obstacle_array_.polygons[i].points[0].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[1].x;
-        marker_point.y = obstacle_array_[i].points[1].y;
+        marker_point.x = obstacle_array_.polygons[i].points[1].x;
+        marker_point.y = obstacle_array_.polygons[i].points[1].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[1].x;
-        marker_point.y = obstacle_array_[i].points[1].y;
+        marker_point.x = obstacle_array_.polygons[i].points[1].x;
+        marker_point.y = obstacle_array_.polygons[i].points[1].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[2].x;
-        marker_point.y = obstacle_array_[i].points[2].y;
+        marker_point.x = obstacle_array_.polygons[i].points[2].x;
+        marker_point.y = obstacle_array_.polygons[i].points[2].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[2].x;
-        marker_point.y = obstacle_array_[i].points[2].y;
+        marker_point.x = obstacle_array_.polygons[i].points[2].x;
+        marker_point.y = obstacle_array_.polygons[i].points[2].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[3].x;
-        marker_point.y = obstacle_array_[i].points[3].y;
+        marker_point.x = obstacle_array_.polygons[i].points[3].x;
+        marker_point.y = obstacle_array_.polygons[i].points[3].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[3].x;
-        marker_point.y = obstacle_array_[i].points[3].y;
+        marker_point.x = obstacle_array_.polygons[i].points[3].x;
+        marker_point.y = obstacle_array_.polygons[i].points[3].y;
         marker.points.push_back(marker_point);
 
-        marker_point.x = obstacle_array_[i].points[0].x;
-        marker_point.y = obstacle_array_[i].points[0].y;
+        marker_point.x = obstacle_array_.polygons[i].points[0].x;
+        marker_point.y = obstacle_array_.polygons[i].points[0].y;
         marker.points.push_back(marker_point);
     }
     visualization_obstacles_pub_.publish(marker);
