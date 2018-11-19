@@ -8,7 +8,7 @@
 #include <math.h>
 
 #include <sensor_msgs/LaserScan.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Polygon.h>
 #include <visualization_msgs/Marker.h>
 
 struct Point
@@ -22,12 +22,8 @@ struct Line
     Point start_point;
     Point end_point;
     float slope;
-};
-
-struct Obstacle
-{
-    std::vector <Line> obstacle;
-    std::vector <Point> apex;
+    float b;
+    float a;
 };
 
 class ObstaclesGenerator
@@ -42,18 +38,22 @@ private:
     ros::Subscriber scan_sub_;
     ros::Publisher obstacles_pub_;
     ros::Publisher visualization_lines_pub_;
+    ros::Publisher visualization_obstacles_pub_;
 
     std::vector <Line> line_array_;
-    std::vector <Obstacle> obstacle_array_;
+    std::vector <geometry_msgs::Polygon> obstacle_array_;
     sensor_msgs::LaserScan scan_;
     void laserScanCallback(const sensor_msgs::LaserScan& msg);
     void generateLines();
     Point getXY(float &angle, float &range);
     float getSlope(Point &p1, Point &p2);
+    float getA(Point &p1, Point &p2);
     float getDistance(Point &p1, Point &p2);
     void visualizeLines();
+    void visualizeObstacles();
     void printInfoParams();
-    void merge_lines();
+    void mergeLines();
+    void generateObstacles();
 
     float max_range_;
     float min_range_;

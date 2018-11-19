@@ -3,13 +3,13 @@
 ObstaclesGenerator::ObstaclesGenerator(const ros::NodeHandle& nh, const ros::NodeHandle& pnh):
     nh_(nh),
     pnh_(pnh),
-    max_range_(1.5),
+    max_range_(0.5),
     min_range_(0.03),
     line_max_range_difference_(0.04),
-    line_max_slope_difference_(2.2),
+    line_max_slope_difference_(2.0),
     line_min_slope_difference_(0.05),
-    line_slope_difference_ratio_(0.04),
-    line_min_length_(0.013),
+    line_slope_difference_ratio_(0.06),
+    line_min_length_(0.015),
     visualize_(true)
 {
     //obstacles_pub_ = nh_.advertise<std_msgs::Float32[8]>("obstacles", 10);
@@ -35,7 +35,9 @@ bool ObstaclesGenerator::init()
     if(visualize_)
     {
         visualization_lines_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_lines", 1 );
+        visualization_obstacles_pub_ = nh_.advertise<visualization_msgs::Marker>( "visualization_obstacles", 1 );
     }
+
     printInfoParams();
     return true;
 }
@@ -44,9 +46,14 @@ void ObstaclesGenerator::laserScanCallback(const sensor_msgs::LaserScan& msg)
 {
     scan_ = msg;
     generateLines();
-    merge_lines();
-    if(visualize_)
-        visualizeLines();
+    if(!line_array_.empty())
+        mergeLines();
+    generateObstacles();
+    if (visualize_)
+        {
+            visualizeLines();
+            visualizeObstacles();
+        }
 }
 
 void ObstaclesGenerator::generateLines()
@@ -66,9 +73,9 @@ void ObstaclesGenerator::generateLines()
 
     for(float act_angle = scan_.angle_min + scan_.angle_increment; act_angle <= scan_.angle_max; act_angle += scan_.angle_increment)
     {
-        act_point = getXY(act_angle, scan_.ranges[act_angle_index]);
         if(scan_.ranges[act_angle_index] <= max_range_ && scan_.ranges[act_angle_index] >= min_range_)
         {
+            act_point = getXY(act_angle, scan_.ranges[act_angle_index]);
             if(std::abs(scan_.ranges[act_angle_index] - scan_.ranges[act_angle_index-1]) <= line_max_range_difference_)
             {
                 if(points_in_line < 2)
@@ -85,7 +92,7 @@ void ObstaclesGenerator::generateLines()
                         line_slope_difference = (line_min_slope_difference_ - line_max_slope_difference_) / line_slope_difference_ratio_ * act_line_length + line_max_slope_difference_;
                         if(line_slope_difference < line_min_slope_difference_)
                             line_slope_difference = line_min_slope_difference_;
-                    }   
+                    }
                     if(std::abs(avg_act_line_slope - getSlope(start_point, act_point)) <= line_slope_difference)
                     {
                         act_line_slope_sum += getSlope(start_point, act_point);
@@ -109,6 +116,8 @@ void ObstaclesGenerator::generateLines()
                 l.start_point = start_point;
                 l.end_point = last_fitted_point;
                 l.slope = getSlope(start_point, last_fitted_point);
+                l.a = getA(start_point, last_fitted_point);
+                l.b = start_point.y - (l.a * start_point.x);
                 line_array_.push_back(l);
             }
             do
@@ -140,7 +149,7 @@ Point ObstaclesGenerator::getXY(float &angle, float &range)
 
 float ObstaclesGenerator::getSlope(Point &p1, Point &p2)
 {
-        return atan((p2.x - p1.x) / (p2.y - p1.y)) + (M_PI / 2);
+        return atan((p2.y - p1.y) / (p2.x - p1.x));
 }
 
 float ObstaclesGenerator::getDistance(Point &p1, Point &p2)
@@ -148,6 +157,11 @@ float ObstaclesGenerator::getDistance(Point &p1, Point &p2)
     float dx = p2.x - p1.x;
     float dy = p2.y - p1.y;
     return std::sqrt(dx * dx + dy * dy);
+}
+
+float ObstaclesGenerator::getA(Point &p1, Point &p2)
+{
+    return (p2.y - p1.y) / (p2.x - p1.x);
 }
 
 void ObstaclesGenerator::visualizeLines()
@@ -198,24 +212,191 @@ void ObstaclesGenerator::printInfoParams()
     ROS_INFO("visualize: %d",visualize_);
 }
 
-void ObstaclesGenerator::merge_lines()
+void ObstaclesGenerator::mergeLines()
 {
-    float merge_max_distance = 0.05;
-    float merge_max_slope_difference = M_PI / 4;
-
+    float merge_max_distance = 0.1;
+    float merge_max_slope_difference = M_PI / 3.6;
     float distance = 0;
     float slope_diff = 0;
     for(int i = 0; i < line_array_.size() - 1; i++)
     {
         distance = getDistance(line_array_[i].end_point ,line_array_[i + 1].start_point);
         slope_diff = std::abs(line_array_[i].slope - line_array_[i + 1].slope);
-
-        if(distance < merge_max_distance && (slope_diff < merge_max_slope_difference || slope_diff > (M_PI - merge_max_slope_difference)))
+        if(distance < merge_max_distance && (slope_diff <= merge_max_slope_difference || slope_diff >= (M_PI - merge_max_slope_difference)))
         {
             line_array_[i].end_point = line_array_[i + 1].end_point;
             line_array_[i].slope = getSlope(line_array_[i].start_point, line_array_[i].end_point);
+            line_array_[i].a = getA(line_array_[i].start_point, line_array_[i].end_point);
+            line_array_[i].b = line_array_[i].start_point.y - (line_array_[i].a * line_array_[i].start_point.x);
             line_array_.erase(line_array_.begin() + i + 1);
             i--;
         }
     }
+}
+
+void ObstaclesGenerator::generateObstacles()
+{
+    obstacle_array_.clear();
+    if (!line_array_.empty())
+    {
+        float distance = 0;
+        float max_distance = 0.17;
+        geometry_msgs::Point32 p;
+        p.z = 0;
+        geometry_msgs::Polygon obstacle;
+        int i = 0;
+        for (i; i < line_array_.size() - 1; i++)
+        {
+            distance = getDistance(line_array_[i].end_point, line_array_[i + 1].start_point);
+
+            if (distance < max_distance)
+            {
+                p.x = (line_array_[i + 1].b - line_array_[i].b) / (line_array_[i].a - line_array_[i + 1].a);
+                p.y = ((line_array_[i + 1].b * line_array_[i].a) - (line_array_[i].b * line_array_[i + 1].a)) / (line_array_[i].a - line_array_[i + 1].a);
+                obstacle.points.push_back(p);
+                p.x = line_array_[i].start_point.x;
+                p.y = line_array_[i].start_point.y;
+                obstacle.points.push_back(p);
+                float b1 = line_array_[i].start_point.y - line_array_[i + 1].a * line_array_[i].start_point.x;
+                float b2 = line_array_[i + 1].end_point.y - line_array_[i].a * line_array_[i + 1].end_point.x;
+                p.x = (b1 - b2) / (line_array_[i].a - line_array_[i + 1].a);
+                p.y = (b1 * line_array_[i].a - b2 * line_array_[i + 1].a) / (line_array_[i].a - line_array_[i + 1].a);
+                obstacle.points.push_back(p);
+                p.x = line_array_[i + 1].end_point.x;
+                p.y = line_array_[i + 1].end_point.y;
+                obstacle.points.push_back(p);
+                obstacle_array_.push_back(obstacle);
+                obstacle.points.clear();
+                i++;
+            }
+            else
+            {
+                p.x = line_array_[i].start_point.x;
+                p.y = line_array_[i].start_point.y;
+                obstacle.points.push_back(p);
+
+                p.x = line_array_[i].end_point.x;
+                p.y = line_array_[i].end_point.y;
+                obstacle.points.push_back(p);
+
+                float add_x = 0.15 * sin(line_array_[i].slope);
+                float add_y = 0.15 * cos(line_array_[i].slope);
+
+                if(!(line_array_[i].end_point.y < 0 && line_array_[i].start_point.y < 0))
+                    if(!(line_array_[i].end_point.y * line_array_[i].start_point.y < 0 && line_array_[i].slope > 0))
+                    {
+                        add_x *= -1;
+                        add_y *= -1;
+                    }
+
+                p.x = line_array_[i].end_point.x + add_x;
+                p.y = line_array_[i].end_point.y - add_y;
+                obstacle.points.push_back(p);
+
+                p.x = line_array_[i].start_point.x + add_x;
+                p.y = line_array_[i].start_point.y - add_y;
+                obstacle.points.push_back(p);
+                
+                obstacle_array_.push_back(obstacle);
+                obstacle.points.clear();
+            }
+        }
+        
+        if(i == line_array_.size() - 1)
+        {
+            p.x = line_array_[i].start_point.x;
+                p.y = line_array_[i].start_point.y;
+                obstacle.points.push_back(p);
+
+                p.x = line_array_[i].end_point.x;
+                p.y = line_array_[i].end_point.y;
+                obstacle.points.push_back(p);
+
+                float add_x = 0.15 * sin(line_array_[i].slope);
+                float add_y = 0.15 * cos(line_array_[i].slope);
+
+                if(!(line_array_[i].end_point.y < 0 && line_array_[i].start_point.y < 0))
+                {
+                    if(!(line_array_[i].end_point.y * line_array_[i].start_point.y < 0 && line_array_[i].slope > 0))
+                    {
+                        add_x *= -1;
+                        add_y *= -1;
+                    }
+                }
+                    
+                p.x = line_array_[i].end_point.x + add_x;
+                p.y = line_array_[i].end_point.y - add_y;
+                obstacle.points.push_back(p);
+
+                p.x = line_array_[i].start_point.x + add_x;
+                p.y = line_array_[i].start_point.y - add_y;
+                obstacle.points.push_back(p);
+                
+                obstacle_array_.push_back(obstacle);
+                obstacle.points.clear();
+        }
+    }
+    //publish obstacles
+}
+
+void ObstaclesGenerator::visualizeObstacles()
+{
+    visualization_msgs::Marker marker;
+
+    marker.header.frame_id = "laser";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "line";
+    marker.type = visualization_msgs::Marker::LINE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.id = 0;
+    marker.lifetime = ros::Duration();
+
+    marker.color.r = 0.0f;
+    marker.color.g = 1.0f;
+    marker.color.b = 0.0f;
+    marker.color.a = 1.0f;
+
+    marker.scale.x = 0.006;
+    marker.scale.y = 0.006;
+
+    geometry_msgs::Point marker_point;
+    marker_point.z = 0;
+
+    int i = 0;
+    for(int i = 0; i < obstacle_array_.size(); i++)
+    {
+        
+        marker_point.x = obstacle_array_[i].points[0].x;
+        marker_point.y = obstacle_array_[i].points[0].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[1].x;
+        marker_point.y = obstacle_array_[i].points[1].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[1].x;
+        marker_point.y = obstacle_array_[i].points[1].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[2].x;
+        marker_point.y = obstacle_array_[i].points[2].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[2].x;
+        marker_point.y = obstacle_array_[i].points[2].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[3].x;
+        marker_point.y = obstacle_array_[i].points[3].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[3].x;
+        marker_point.y = obstacle_array_[i].points[3].y;
+        marker.points.push_back(marker_point);
+
+        marker_point.x = obstacle_array_[i].points[0].x;
+        marker_point.y = obstacle_array_[i].points[0].y;
+        marker.points.push_back(marker_point);
+    }
+    visualization_obstacles_pub_.publish(marker);
 }
