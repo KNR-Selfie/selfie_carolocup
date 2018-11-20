@@ -42,7 +42,7 @@ class OdometryNode:
     def sub_robot_pose_update(self, msg):
         # Find the index of the racecar
         try:
-            arrayIndex = msg.name.index('racecar::base_link')
+            arrayIndex = msg.name.index('selfie::base_link')
         except ValueError as e:
             # Wait for Gazebo to startup
             pass

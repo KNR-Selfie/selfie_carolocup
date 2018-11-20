@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="racecar" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="selfie" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
 <!-- inertial parameter macros -->
 
@@ -49,7 +49,7 @@
 <xacro:macro name="chassis_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/chassis.STL" />
+    <mesh filename="package://selfie_description/meshes/chassis.STL" />
   </geometry>
 </xacro:macro>
 
@@ -57,42 +57,42 @@
 <xacro:macro name="left_rear_wheel_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/left_rear_wheel.STL" />
+    <mesh filename="package://selfie_description/meshes/left_rear_wheel.STL" />
   </geometry>
 </xacro:macro>
 
 <xacro:macro name="right_rear_wheel_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/right_rear_wheel.STL" />
+    <mesh filename="package://selfie_description/meshes/right_rear_wheel.STL" />
   </geometry>
 </xacro:macro>
 
 <xacro:macro name="left_front_wheel_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/left_front_wheel.STL" />
+    <mesh filename="package://selfie_description/meshes/left_front_wheel.STL" />
   </geometry>
 </xacro:macro>
 
 <xacro:macro name="right_front_wheel_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/right_front_wheel.STL" />
+    <mesh filename="package://selfie_description/meshes/right_front_wheel.STL" />
   </geometry>
 </xacro:macro>
 
 <xacro:macro name="left_steering_hinge_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/left_steering_hinge.STL" />
+    <mesh filename="package://selfie_description/meshes/left_steering_hinge.STL" />
   </geometry>
 </xacro:macro>
 
 <xacro:macro name="right_steering_hinge_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>
-    <mesh filename="package://racecar_description/meshes/right_steering_hinge.STL" />
+    <mesh filename="package://selfie_description/meshes/right_steering_hinge.STL" />
   </geometry>
 </xacro:macro>
 
@@ -106,7 +106,7 @@
 <xacro:macro name="right_wheels_collision_geometry">
   <origin xyz="0 0 0.0225" rpy="0 0 0" />
   <geometry>
-    <cylinder length="0.045" radius="0.05" />
+    <cylinder length="0.045" radius="0.05" />  <!-- changed from 0.045   -->
   </geometry>
 </xacro:macro>
 

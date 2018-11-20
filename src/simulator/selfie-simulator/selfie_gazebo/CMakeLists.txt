@@ -4,6 +4,8 @@ project(selfie_gazebo)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
+
 find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
 )
@@ -117,7 +119,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(racecar_gazebo
-#   src/${PROJECT_NAME}/racecar_gazebo.cpp
+#   src/${PROJECT_NAME}/selfie_gazebo.cpp
 # )
 
 ## Add cmake target dependencies of the library

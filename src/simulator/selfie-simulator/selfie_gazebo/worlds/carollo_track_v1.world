@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="carollo_track_v1">
+    <include>
+      <uri>model://selfie_description/models/carollo_track_v1</uri>
+      <name>track</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+      <pose>0 0 10 0 0 0</pose>
+      <name>sun</name>
+    </include>
+  </world>
+</sdf>

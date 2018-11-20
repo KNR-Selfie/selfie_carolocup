@@ -5,14 +5,14 @@
       <collision name="collision">
         <geometry>
           <mesh>
-            <uri>model://racecar_description/meshes/barca_track.DAE</uri>
+            <uri>model://selfie_description/meshes/barca_track.DAE</uri>
           </mesh>
         </geometry>
       </collision>
       <visual name="visual">
         <geometry>
           <mesh>
-            <uri>model://racecar_description/meshes/barca_track.DAE</uri>
+            <uri>model://selfie_description/meshes/barca_track.DAE</uri>
           </mesh>
         </geometry>
       </visual>

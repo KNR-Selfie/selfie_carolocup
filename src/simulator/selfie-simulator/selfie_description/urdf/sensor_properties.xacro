@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<robot name="selfie" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="camera_params">
+    <horizontal_fov>1.047197551</horizontal_fov>     <!--0.8709216071359963-->
+    <image>
+      <width>1020</width>    <!-- 640 -->
+      <height>800</height>     <!-- 480-->
+      <format>B8G8R8</format>
+    </image>
+    <clip>
+      <near>0.02</near>
+      <far>300</far>
+    </clip>
+    <noise>
+      <type>gaussian</type>
+      <mean>0.0</mean>
+      <stddev>0.007</stddev>
+    </noise>
+  </xacro:macro>
+
+  <xacro:macro name="camera_plugin_params">
+    <alwaysOn>true</alwaysOn>
+    <updateRate>30</updateRate>    <!-- 30 -->
+    <cameraName>/camera/zed</cameraName>
+    <imageTopicName>rgb/image_rect_color</imageTopicName>
+    <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
+    <frameName>camera_link</frameName>
+    <hackBaseline>0</hackBaseline><!-- set this to 0.12 for the second camera -->
+    <distortionK1>0.0</distortionK1>
+    <distortionK2>0.0</distortionK2>
+    <distortionK3>0.0</distortionK3>
+    <distortionT1>0.0</distortionT1>
+    <distortionT2>0.0</distortionT2>
+  </xacro:macro>
+</robot>
