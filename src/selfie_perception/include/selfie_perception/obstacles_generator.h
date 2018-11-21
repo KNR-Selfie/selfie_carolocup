@@ -25,6 +25,7 @@ struct Line
     float slope;
     float b;
     float a;
+    float length;
 };
 
 class ObstaclesGenerator
@@ -56,13 +57,17 @@ private:
     void mergeLines();
     void generateObstacles();
 
+    void deleteSmallLines();
+
     float max_range_;
     float min_range_;
-    float line_max_range_difference_;
-    float line_max_slope_difference_;
-    float line_min_slope_difference_;
-    float line_slope_difference_ratio_;
+    float line_search_max_range_difference_;
+    float line_search_max_slope_difference_;
+    float line_search_min_slope_difference_;
+    float line_search_slope_difference_ratio_;
+    float line_search_min_length_;
     float line_min_length_;
+    float obstacle_nominal_length_;
     bool visualize_;
     std::string visualization_frame_;
     std::string obstacles_frame_;

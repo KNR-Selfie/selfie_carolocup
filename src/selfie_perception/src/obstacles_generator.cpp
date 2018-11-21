@@ -5,11 +5,13 @@ ObstaclesGenerator::ObstaclesGenerator(const ros::NodeHandle& nh, const ros::Nod
     pnh_(pnh),
     max_range_(1.5),
     min_range_(0.03),
-    line_max_range_difference_(0.04),
-    line_max_slope_difference_(2.0),
-    line_min_slope_difference_(0.05),
-    line_slope_difference_ratio_(0.06),
-    line_min_length_(0.015),
+    line_search_max_range_difference_(0.04),
+    line_search_max_slope_difference_(2.0),
+    line_search_min_slope_difference_(0.05),
+    line_search_slope_difference_ratio_(0.06),
+    line_search_min_length_(0.015),
+    line_min_length_(0.05),
+    obstacle_nominal_length_(0.11),
     obstacles_frame_("laser"),
     visualization_frame_("laser"),
     visualize_(true)
@@ -28,11 +30,13 @@ bool ObstaclesGenerator::init()
     scan_sub_ = nh_.subscribe("/scan", 10, &ObstaclesGenerator::laserScanCallback, this);
     pnh_.getParam("max_range",max_range_);
     pnh_.getParam("min_range",min_range_);
-    pnh_.getParam("line_max_range_difference",line_max_range_difference_);
-    pnh_.getParam("line_max_slope_difference",line_max_slope_difference_);
-    pnh_.getParam("line_min_slope_difference",line_min_slope_difference_);
-    pnh_.getParam("line_slope_difference_ratio",line_slope_difference_ratio_);
+    pnh_.getParam("line_search_max_range_difference",line_search_max_range_difference_);
+    pnh_.getParam("line_search_max_slope_difference",line_search_max_slope_difference_);
+    pnh_.getParam("line_search_min_slope_difference",line_search_min_slope_difference_);
+    pnh_.getParam("line_search_slope_difference_ratio",line_search_slope_difference_ratio_);
+    pnh_.getParam("line_search_min_length",line_search_min_length_);
     pnh_.getParam("line_min_length",line_min_length_);
+    pnh_.getParam("obstacle_nominal_length",obstacle_nominal_length_);
     pnh_.getParam("visualize",visualize_);
     pnh_.getParam("obstacles_frame",obstacles_frame_);
     pnh_.getParam("visualization_frame",visualization_frame_);
@@ -52,7 +56,10 @@ void ObstaclesGenerator::laserScanCallback(const sensor_msgs::LaserScan& msg)
     scan_ = msg;
     generateLines();
     if(!line_array_.empty())
+    {
         mergeLines();
+        deleteSmallLines();
+    }
     generateObstacles();
     if (visualize_)
         {
@@ -74,14 +81,14 @@ void ObstaclesGenerator::generateLines()
     bool reset_params = false;
     Point act_point;
     float act_line_length = 0;
-    float line_slope_difference = line_max_slope_difference_;
+    float line_slope_difference = line_search_max_slope_difference_;
 
     for(float act_angle = scan_.angle_min + scan_.angle_increment; act_angle <= scan_.angle_max; act_angle += scan_.angle_increment)
     {
         if(scan_.ranges[act_angle_index] <= max_range_ && scan_.ranges[act_angle_index] >= min_range_)
         {
             act_point = getXY(act_angle, scan_.ranges[act_angle_index]);
-            if(std::abs(scan_.ranges[act_angle_index] - scan_.ranges[act_angle_index-1]) <= line_max_range_difference_)
+            if(std::abs(scan_.ranges[act_angle_index] - scan_.ranges[act_angle_index-1]) <= line_search_max_range_difference_)
             {
                 if(points_in_line < 2)
                 {
@@ -92,11 +99,12 @@ void ObstaclesGenerator::generateLines()
                 else 
                 {
                     act_line_length = getDistance(start_point, act_point);
-                    if(line_slope_difference > line_min_slope_difference_)
+                    if(line_slope_difference > line_search_min_slope_difference_)
                     {
-                        line_slope_difference = (line_min_slope_difference_ - line_max_slope_difference_) / line_slope_difference_ratio_ * act_line_length + line_max_slope_difference_;
-                        if(line_slope_difference < line_min_slope_difference_)
-                            line_slope_difference = line_min_slope_difference_;
+                        line_slope_difference = (line_search_min_slope_difference_ - line_search_max_slope_difference_) / line_search_slope_difference_ratio_ 
+                        * act_line_length + line_search_max_slope_difference_;
+                        if(line_slope_difference < line_search_min_slope_difference_)
+                            line_slope_difference = line_search_min_slope_difference_;
                     }
                     if(std::abs(avg_act_line_slope - getSlope(start_point, act_point)) <= line_slope_difference)
                     {
@@ -115,7 +123,7 @@ void ObstaclesGenerator::generateLines()
             reset_params = true;
         if(reset_params || act_angle == scan_.angle_max)
         {
-            if (act_line_length >= line_min_length_)
+            if (act_line_length >= line_search_min_length_)
             {
                 Line l;
                 l.start_point = start_point;
@@ -123,6 +131,7 @@ void ObstaclesGenerator::generateLines()
                 l.slope = getSlope(start_point, last_fitted_point);
                 l.a = getA(start_point, last_fitted_point);
                 l.b = start_point.y - (l.a * start_point.x);
+                l.length = act_line_length;
                 line_array_.push_back(l);
             }
             do
@@ -136,7 +145,7 @@ void ObstaclesGenerator::generateLines()
             points_in_line = 0;
             act_line_slope_sum = 0;
             act_line_length = 0;
-            line_slope_difference = line_max_slope_difference_;
+            line_slope_difference = line_search_max_slope_difference_;
             reset_params = false;
         }
         act_angle_index ++;
@@ -209,14 +218,18 @@ void ObstaclesGenerator::printInfoParams()
 {
     ROS_INFO("max_range: %.3f",max_range_);
     ROS_INFO("min_range: %.3f",min_range_);
-    ROS_INFO("line_max_range_difference: %.3f",line_max_range_difference_);
-    ROS_INFO("line_max_slope_difference: %.3f",line_max_slope_difference_);
-    ROS_INFO("line_min_slope_difference: %.3f",line_min_slope_difference_);
-    ROS_INFO("line_slope_difference_ratio: %.3f",line_slope_difference_ratio_);
     ROS_INFO("line_min_length: %.3f",line_min_length_);
+    ROS_INFO("obstacle_nominal_length: %.3f\n",obstacle_nominal_length_);
+
+    ROS_INFO("line_search_max_range_difference: %.3f",line_search_max_range_difference_);
+    ROS_INFO("line_search_max_slope_difference: %.3f",line_search_max_slope_difference_);
+    ROS_INFO("line_search_min_slope_difference: %.3f",line_search_min_slope_difference_);
+    ROS_INFO("line_search_slope_difference_ratio: %.3f",line_search_slope_difference_ratio_);
+    ROS_INFO("line_search_min_length: %.3f\n",line_search_min_length_);
+
     ROS_INFO("visualize: %d",visualize_);
     ROS_INFO("obstacles_frame: %s",obstacles_frame_.c_str());
-    ROS_INFO("visualization_frame: %s",visualization_frame_.c_str());
+    ROS_INFO("visualization_frame: %s\n",visualization_frame_.c_str());
 }
 
 void ObstaclesGenerator::mergeLines()
@@ -235,6 +248,7 @@ void ObstaclesGenerator::mergeLines()
             line_array_[i].slope = getSlope(line_array_[i].start_point, line_array_[i].end_point);
             line_array_[i].a = getA(line_array_[i].start_point, line_array_[i].end_point);
             line_array_[i].b = line_array_[i].start_point.y - (line_array_[i].a * line_array_[i].start_point.x);
+            line_array_[i].length = getDistance(line_array_[i].start_point, line_array_[i].end_point);
             line_array_.erase(line_array_.begin() + i + 1);
             i--;
         }
@@ -250,6 +264,7 @@ void ObstaclesGenerator::generateObstacles()
     {
         float distance = 0;
         float max_distance = 0.16;
+        float slope_diff = 0;
         geometry_msgs::Point32 p;
         p.z = 0;
         geometry_msgs::Polygon obstacle;
@@ -260,7 +275,8 @@ void ObstaclesGenerator::generateObstacles()
             if(i != line_array_.size() - 1)
             {
                 distance = getDistance(line_array_[i].end_point, line_array_[i + 1].start_point);
-                if(distance < max_distance)
+                slope_diff = std::abs(line_array_[i].slope - line_array_[i + 1].slope);
+                if(distance < max_distance && slope_diff > M_PI / 4.2)
                 {
                     p.x = (line_array_[i + 1].b - line_array_[i].b) / (line_array_[i].a - line_array_[i + 1].a);
                     p.y = ((line_array_[i + 1].b * line_array_[i].a) - (line_array_[i].b * line_array_[i + 1].a)) / (line_array_[i].a - line_array_[i + 1].a);
@@ -290,8 +306,8 @@ void ObstaclesGenerator::generateObstacles()
                 p.y = line_array_[i].end_point.y;
                 obstacle.points.push_back(p);
 
-                float add_x = 0.15 * sin(line_array_[i].slope);
-                float add_y = 0.15 * cos(line_array_[i].slope);
+                float add_x = obstacle_nominal_length_ * sin(line_array_[i].slope);
+                float add_y = obstacle_nominal_length_ * cos(line_array_[i].slope);
 
                 float sx = (line_array_[i].end_point.x + line_array_[i].start_point.x) / 2;
                 float sy = (line_array_[i].end_point.y + line_array_[i].start_point.y) / 2;
@@ -385,4 +401,16 @@ void ObstaclesGenerator::visualizeObstacles()
         marker.points.push_back(marker_point);
     }
     visualization_obstacles_pub_.publish(marker);
+}
+
+void ObstaclesGenerator::deleteSmallLines()
+{
+    for(int i = 0; i < line_array_.size(); i++)
+    {
+        if(line_array_[i].length < line_min_length_)
+        {
+            line_array_.erase(line_array_.begin() + i);
+            i--;
+        }
+    }
 }
