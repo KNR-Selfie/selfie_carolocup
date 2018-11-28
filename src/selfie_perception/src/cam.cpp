@@ -6,7 +6,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "lanedetector.hpp"
+#include <selfie_perception/lanedetector.h>
 
 static const std::string OPENCV_WINDOW = "Image window";
 

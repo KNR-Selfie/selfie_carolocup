@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
 )
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3.3.1 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -54,11 +54,11 @@ find_package(OpenCV REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-   PolygonArray.msg
-   RoadMarkings.msg
- )
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -75,10 +75,10 @@ find_package(OpenCV REQUIRED)
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   geometry_msgs
- )
+# generate_messages(
+#   DEPENDENCIES
+#   geometry_msgs#   sensor_msgs#   std_msgs#   visualization_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -111,8 +111,8 @@ find_package(OpenCV REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES selfie_perception
-  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs std_msgs visualization_msgs selfie_msgs
+  LIBRARIES selfie_perception
+  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs std_msgs visualization_msgs selfie_msgs cv_bridge image_transport
 #  DEPENDS system_lib
 )
 
@@ -123,8 +123,9 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  ${OpenCV_INCLUDE_DIRS}
+  include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -140,7 +141,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
- add_executable(${PROJECT_NAME}_node src/cam.cpp src/lanedetector.cpp)
+# add_executable(${PROJECT_NAME}_node src/selfie_perception_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -153,10 +154,9 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(${PROJECT_NAME}_node
-   ${OpenCV_LIBRARIES}
-   ${catkin_LIBRARIES}
- )
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -212,6 +212,15 @@ install(DIRECTORY include/${PROJECT_NAME}/
     PATTERN ".svn" EXCLUDE
 )
 
+install(DIRECTORY config/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+    FILES_MATCHING PATTERN "*.yaml"
+)
+
 add_executable(detect_obstacles src/detect_obstacles.cpp src/obstacles_generator.cpp)
 target_link_libraries(detect_obstacles ${catkin_LIBRARIES})
 add_dependencies(detect_obstacles detect_obstacles_generate_messages_cpp)
+
+add_executable(detect_markings src/cam.cpp src/lanedetector.cpp)
+target_link_libraries(detect_markings ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(detect_markings detect_markings_generate_messages_cpp)
