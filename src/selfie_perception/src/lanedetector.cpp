@@ -1,9 +1,13 @@
 #include <selfie_perception/lanedetector.h>
 
+#define PI 3.1415926
+
 static int Acc_slider = 1;
 static int Acc_value = 1;
-static int Acc_filt = 15;
+static int Acc_filt = 5;
 static int Acc_filt_slider = 40;
+static int Alpha_ = 12;
+static int F_ = 500, Dist_ = 500;
 
 cv::Mat tmp_mat(IDS_HEIGHT, IDS_WIDTH, CV_8UC3);
 
@@ -21,7 +25,8 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	binary_frame_(),
 	mask_(),
 	canny_frame_(),
-	visualization_frame_()
+	visualization_frame_(),
+	homography_frame_()
 {
 	//lines_pub_ =
 }
@@ -36,6 +41,9 @@ bool LaneDetector::init()
 	kernel_v_.at<float>(0, 0) = -1;
 	kernel_v_.at<float>(0, 1) = 0;
 	kernel_v_.at<float>(0, 2) = 1;
+
+	cv::namedWindow("Homography", 1);
+	cv::createTrackbar("Alpha", "Homography", &Alpha_, 180);
 
 	image_sub_ = it_.subscribe("/image_raw", 1, &LaneDetector::imageCallback, this);
 
@@ -66,8 +74,8 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 		cv::fillConvexPoly(mask_, points, 4, cv::Scalar(255, 0, 0));
 		mask_initialized_ = true;
 	}
-
-	cv::cvtColor(current_frame_, gray_frame_, cv::COLOR_BGR2GRAY);
+	Homography(current_frame_, homography_frame_);
+	cv::cvtColor(homography_frame_, gray_frame_, cv::COLOR_BGR2GRAY);
 	cv::threshold(gray_frame_, binary_frame_, binary_treshold_, 255, cv::THRESH_BINARY);
 	cv::bitwise_and(binary_frame_, mask_, canny_frame_);
 	cv::medianBlur(canny_frame_, canny_frame_, 5);
@@ -111,6 +119,7 @@ void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point> > &input_w
 	count = 0;
 
 	output_white = cv::Mat::zeros(output_white.size(), CV_8UC3);
+
 	for (int i = 0; i < input_white.size(); i++)
 	{
 		for (unsigned int j = 0; j < input_white[i].size(); j++)
@@ -119,6 +128,7 @@ void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point> > &input_w
 
 			if (j > 0)
 			{
+				cv::line(output_white, cv::Point(input_white[i][j - 1]), cv::Point(input_white[i][j]), cv::Scalar(0, 0, 255), 2);
 				if ((input_white[i][j].x - input_white[i][j - 1].x) != 0)
 					sum = sum + ((input_white[i][j].y - input_white[i][j - 1].y) / (input_white[i][j].x - input_white[i][j - 1].x));
 				count++;
@@ -199,11 +209,60 @@ void LaneDetector::Draw_Points(cv::Mat &frame, std::vector<cv::Point> left_point
 	}
 }
 
+void LaneDetector::Homography(cv::Mat input_frame, cv::Mat &homography_frame)
+{
+	resize(input_frame, input_frame, cv::Size(640, 480));
+
+	double focal_lenth, dist, alpha;
+
+	alpha = ((double)Alpha_ - 90) * PI / 180;
+	focal_lenth = (double)F_;
+	dist = (double)Dist_;
+
+	cv::Size image_size = input_frame.size();
+	double w = (double)image_size.width, h = (double)image_size.height;
+
+	// Matrix 2D -> 3D
+	cv::Mat A1 = (cv::Mat_<float>(4, 3) <<
+		1, 0, -w / 2,
+		0, 1, -h / 2,
+		0, 0, 0,
+		0, 0, 1);
+	
+	// Rotation matrix
+	cv::Mat RX = (cv::Mat_<float>(4, 4) <<
+		1, 0, 0, 0,
+		0, cos(alpha), -sin(alpha), 0,
+		0, sin(alpha), cos(alpha), 0,
+		0, 0, 0, 1);
+	
+	cv::Mat R = RX;
+
+	// Translation matrix
+	cv::Mat T = (cv::Mat_<float>(4, 4) <<
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, dist,
+		0, 0, 0, 1);
+
+	// Intrinsic matrix
+	cv::Mat K = (cv::Mat_<float>(3, 4) <<
+		focal_lenth, 0, w / 2, 0,
+		0, focal_lenth, h / 2, 0,
+		0, 0, 1, 0
+		);
+
+	cv::Mat transformationMat = K * (T * (R * A1));
+
+	cv::warpPerspective(input_frame, homography_frame, transformationMat, image_size, cv::INTER_CUBIC | cv::WARP_INVERSE_MAP);
+}
+
 void LaneDetector::openCVVisualization()
 {
 	cv::imshow("Raw image", current_frame_);
-	cv::imshow("Grayscale", gray_frame_);
-	cv::imshow("Canny", canny_frame_);
+	cv::imshow("Binarization", binary_frame_);
+	//cv::imshow("Canny", canny_frame_);
 	cv::imshow("Output", visualization_frame_);
+	cv::imshow("Homography", homography_frame_);
 	cv::waitKey(1);
 }

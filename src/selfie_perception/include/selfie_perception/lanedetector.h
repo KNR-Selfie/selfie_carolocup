@@ -36,6 +36,7 @@ class LaneDetector
 	cv::Mat mask_;
 	cv::Mat canny_frame_;
 	cv::Mat visualization_frame_;
+	cv::Mat homography_frame_;
 
 	std::vector<std::vector<cv::Point> > points_vector_;
 
@@ -48,6 +49,7 @@ class LaneDetector
 	double Alfa_Val(cv::Point A, cv::Point B, cv::Point C);
 	void Draw_Points(cv::Mat &frame, std::vector<cv::Point> left_points, std::vector<cv::Point> right_points, std::vector<cv::Point> middle_points);
 	void AvgSlope(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output);
+	void Homography(cv::Mat input_frame, cv::Mat &homography_frame);
 
 	int binary_treshold_;
 	bool mask_initialized_;
