@@ -7,9 +7,9 @@ static int Acc_filt_slider = 40;
 
 cv::Mat tmp_mat(IDS_HEIGHT, IDS_WIDTH, CV_8UC3);
 
-LaneDetector::LaneDetector(const ros::NodeHandle& nh, const ros::NodeHandle& pnh):
-    nh_(nh),
-    pnh_(pnh),
+LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh) : 
+	nh_(nh),
+	pnh_(pnh),
 	it_(nh),
 	binary_treshold_(180),
 	mask_initialized_(false),
@@ -23,7 +23,7 @@ LaneDetector::LaneDetector(const ros::NodeHandle& nh, const ros::NodeHandle& pnh
 	canny_frame_(),
 	visualization_frame_()
 {
-    //lines_pub_ = 
+	//lines_pub_ =
 }
 
 LaneDetector::~LaneDetector()
@@ -42,28 +42,27 @@ bool LaneDetector::init()
 	return true;
 }
 
-void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 {
 	try
-    {
+	{
 		current_frame_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8)->image;
-    }
-    catch (cv_bridge::Exception& e)
-    {
+	}
+	catch (cv_bridge::Exception &e)
+	{
 		ROS_ERROR("cv_bridge exception: %s", e.what());
 		return;
-    }
+	}
 
-	if(!mask_initialized_)
+	if (!mask_initialized_)
 	{
 		mask_ = cv::Mat::zeros(cv::Size(current_frame_.cols, current_frame_.rows), CV_8UC1);
 		cv::Point points[4] =
-		{
-			cv::Point(0, current_frame_.rows),
-			cv::Point(current_frame_.cols, current_frame_.rows),
-			cv::Point(current_frame_.cols - 60, current_frame_.rows / 3),
-			cv::Point(60, current_frame_.rows / 3)
-		};
+			{
+				cv::Point(0, current_frame_.rows),
+				cv::Point(current_frame_.cols, current_frame_.rows),
+				cv::Point(current_frame_.cols - 60, current_frame_.rows / 3),
+				cv::Point(60, current_frame_.rows / 3)};
 		cv::fillConvexPoly(mask_, points, 4, cv::Scalar(255, 0, 0));
 		mask_initialized_ = true;
 	}
@@ -77,11 +76,11 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 	points_vector_.clear();
 	visualization_frame_.rows = current_frame_.rows;
 	visualization_frame_.cols = current_frame_.cols;
-	detectLine_both(canny_frame_,points_vector_);
+	detectLine_both(canny_frame_, points_vector_);
 	drawPoints_both(points_vector_, visualization_frame_);
 	AvgSlope(points_vector_, visualization_frame_);
 
-	if(visualize_)
+	if (visualize_)
 	{
 		openCVVisualization();
 	}
@@ -89,19 +88,20 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 void LaneDetector::detectLine_both(cv::Mat &input_white, std::vector<std::vector<cv::Point> > &output_white)
 {
-    output_white.clear();
-    cv::findContours(input_white, output_white, hierarchy_detectline, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+	output_white.clear();
+	cv::findContours(input_white, output_white, hierarchy_detectline, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
-    for (std::vector<std::vector<cv::Point> >::iterator filt =output_white.begin();filt !=output_white.end();){
-        if (filt->size()<Acc_filt)
-            filt = output_white.erase(filt);
-        else
-            ++filt;
-    }
-    for (int i = 0; i < output_white.size(); i++)
-    {
-        cv::approxPolyDP(cv::Mat(output_white[i]),output_white[i], Acc_value, false);
-    }
+	for (std::vector<std::vector<cv::Point> >::iterator filt = output_white.begin(); filt != output_white.end();)
+	{
+		if (filt->size() < Acc_filt)
+			filt = output_white.erase(filt);
+		else
+			++filt;
+	}
+	for (int i = 0; i < output_white.size(); i++)
+	{
+		cv::approxPolyDP(cv::Mat(output_white[i]), output_white[i], Acc_value, false);
+	}
 }
 
 void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output_white)
@@ -110,11 +110,11 @@ void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point> > &input_w
 	slope = 0;
 	count = 0;
 
-    output_white = cv::Mat::zeros(output_white.size(), CV_8UC3);
-    for (int i = 0; i < input_white.size(); i++)
-    {
-        for (unsigned int j = 0; j < input_white[i].size(); j++)
-        {
+	output_white = cv::Mat::zeros(output_white.size(), CV_8UC3);
+	for (int i = 0; i < input_white.size(); i++)
+	{
+		for (unsigned int j = 0; j < input_white[i].size(); j++)
+		{
 			cv::circle(output_white, input_white[i][j], 3, cv::Scalar(0, 255, 255), CV_FILLED, cv::LINE_AA);
 
 			if (j > 0)
@@ -123,11 +123,10 @@ void LaneDetector::drawPoints_both(std::vector<std::vector<cv::Point> > &input_w
 					sum = sum + ((input_white[i][j].y - input_white[i][j - 1].y) / (input_white[i][j].x - input_white[i][j - 1].x));
 				count++;
 			}
+		}
+	}
 
-        }
-    }
-
-	if(count != 0)
+	if (count != 0)
 		avg = sum / count;
 
 	slope = avg;

@@ -1,6 +1,6 @@
 #include <selfie_perception/lanedetector.h>
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     ros::init(argc, argv, "detect_markings");
     ros::NodeHandle nh;
