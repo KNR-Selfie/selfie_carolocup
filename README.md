@@ -1,27 +1,30 @@
 # Selfie @ Carolo-Cup 2019
 
-## Gazebo install instructions
-
-Follow the instructions on this page: http://gazebosim.org/tutorials?tut=ros_installing&cat=connect_ros
-
-If you have already installed Gazebo, make sure that you have version 7. Otherwise nothing will work, and you will need to delete gazebo and install version 7.
+This repository contains the [catkin workspace](http://wiki.ros.org/catkin/workspaces) for Selfie Autonomous Car at [Carolo-Cup 2019](https://wiki.ifr.ing.tu-bs.de/carolocup/en/event-history/2019/dates) competition.
 
 
-## Launching simulator
- Build everything and run ./source/setup.bash
+## Build instructions
 
-If you installed everything properly the only thing you need to do is run:
+The project is targetting [ROS Kinetic Kame](http://wiki.ros.org/kinetic) distribution. Before proceeding, make sure you have it [installed](http://wiki.ros.org/kinetic/Installation) on your development machine.
 
-roslaunch selfie_race selfie_sim.launch
+First, clone the repository to a convenient location using:
 
-Be patient.. it opens quite slowly :(
-This will open gazebo and rviz windows.
-Simulator publishes /scan and camera/zed/rgb/image_rect_color
-To be able to control selfie you have to publish something on /keyboard_steering_ackermann/teleop topic.
-(name will be changed to more convenient one in the future)
+```bash
+git clone https://github.com/KNR-Selfie/selfie_carolocup2019
+```
 
-You can also control the car with the keyboard by running:
-rosrun selfie_control keyboard_teleop.py
+Navigate to the main directory with:
+
+```bash
+cd selfie_carolocup2019
+```
+
+Lastly, the following set of commands will in turn download all external dependencies, build the packages in `src` directory and include them in your environment.
+
+```bash
+rosdep install --from-paths src --ignore-src -r -y
+catkin_make
+source ./devel/setup.bash
+```
 
 
-Good luck.
