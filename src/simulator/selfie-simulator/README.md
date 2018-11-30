@@ -17,10 +17,3 @@ git clone https://github.com/crisscrosskao/racecar-simulator
 git clone https://github.com/mit-racecar/vesc.git
 git clone https://gitub.com/ros-drivers/ackermann_msgs.git
 git clone https://github.com/mlab-upenn/f1_10_sim.git
-
-Run "roslaunch race f1_tenth.launch". Note that f1_tenth.launch file will
-need to be modified so that it loads the track_levine.world instead of the default
-track_barca.world.
-
-Additionally, included in this repository is the Sketchup file for the levine_track.
-Feel free to improve on it and make modifications.
