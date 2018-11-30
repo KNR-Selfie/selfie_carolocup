@@ -8,6 +8,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <selfie_msgs/RoadMarkings.h>
+#include <geometry_msgs/Point.h>
 
 #define IDS_WIDTH 752
 #define IDS_HEIGHT 360
@@ -38,6 +40,9 @@ class LaneDetector
 	cv::Mat homography_frame_;
 
 	std::vector<std::vector<cv::Point> > points_vector_;
+	int left_points_index_;
+	int right_points_index_;
+	int middle_points_index_;
 
 	void imageCallback(const sensor_msgs::ImageConstPtr &msg);
 	void openCVVisualization();
@@ -45,12 +50,14 @@ class LaneDetector
 	void quickSortLinesY(int left, int right);
 	void quickSortPointsY(std::vector<cv::Point> &vector_in, int left, int right);
 	float getDistance(cv::Point p1, cv::Point p2);
+	void recognizeLines();
+	void publish_markings();
 
 	void detectLine_both(cv::Mat &input_white, std::vector<std::vector<cv::Point> > &output_white);
 	void drawPoints_both(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output_white);
 	void Dev_Lines(std::vector<std::vector<cv::Point> > &input_white, std::vector<cv::Point> &left_points, std::vector<cv::Point> &right_points, std::vector<cv::Point> &middle_points, cv::Point A, cv::Point B);
 	double Alfa_Val(cv::Point A, cv::Point B, cv::Point C);
-	void Draw_Points(cv::Mat &frame, std::vector<cv::Point> left_points, std::vector<cv::Point> right_points, std::vector<cv::Point> middle_points);
+	void Draw_Points(cv::Mat &frame);
 	void AvgSlope(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output);
 	void Homography(cv::Mat input_frame, cv::Mat &homography_frame);
 
@@ -58,10 +65,6 @@ class LaneDetector
 	bool mask_initialized_;
 	bool visualize_;
 	float max_mid_line_gap_;
-
-	std::vector<cv::Point> Left_points;
-	std::vector<cv::Point> Right_points;
-	std::vector<cv::Point> Middle_points;
 
 	double slope;
 	double act_slope;

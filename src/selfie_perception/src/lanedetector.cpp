@@ -19,6 +19,9 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	mask_initialized_(false),
 	visualize_(true),
 	max_mid_line_gap_(90),
+	left_points_index_(-1),
+	right_points_index_(-1),
+	middle_points_index_(-1),
 
 	kernel_v_(),
 	current_frame_(),
@@ -29,7 +32,7 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	visualization_frame_(),
 	homography_frame_()
 {
-	//lines_pub_ =
+	lines_pub_ =  nh_.advertise<selfie_msgs::RoadMarkings>("road_markings", 10);
 }
 
 LaneDetector::~LaneDetector()
@@ -68,8 +71,8 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 		mask_ = cv::Mat::zeros(cv::Size(current_frame_.cols, current_frame_.rows), CV_8UC1);
 		cv::Point points[4] =
 			{
-				cv::Point(0, current_frame_.rows),
-				cv::Point(current_frame_.cols, current_frame_.rows),
+				cv::Point(60, current_frame_.rows),
+				cv::Point(current_frame_.cols - 60, current_frame_.rows),
 				cv::Point(current_frame_.cols - 60, current_frame_.rows / 3),
 				cv::Point(60, current_frame_.rows / 3)};
 		cv::fillConvexPoly(mask_, points, 4, cv::Scalar(255, 0, 0));
@@ -82,16 +85,18 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 	cv::medianBlur(canny_frame_, canny_frame_, 5);
 	cv::filter2D(canny_frame_, canny_frame_, -1, kernel_v_, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
 
-	visualization_frame_.rows = current_frame_.rows;
-	visualization_frame_.cols = current_frame_.cols;
 	detectLine_both(canny_frame_, points_vector_);
 	mergeMiddleLane();
-	drawPoints_both(points_vector_, visualization_frame_);
+	recognizeLines();
 
 	if (visualize_)
 	{
+		visualization_frame_.rows = current_frame_.rows;
+		visualization_frame_.cols = current_frame_.cols;
+		Draw_Points(visualization_frame_);
 		openCVVisualization();
 	}
+	publish_markings();
 }
 
 void LaneDetector::detectLine_both(cv::Mat &input_white, std::vector<std::vector<cv::Point> > &output_white)
@@ -153,8 +158,8 @@ void LaneDetector::AvgSlope(std::vector<std::vector<cv::Point> > &input_white, c
 	cv::Point center2(x2, y2);
 
 	cv::line(output, center1, center2, cv::Scalar(100, 100, 255), 4);
-	Dev_Lines(input_white, Left_points, Right_points, Middle_points, center1, center2);
-	Draw_Points(output, Left_points, Right_points, Middle_points);
+	//Dev_Lines(input_white, Left_points, Right_points, Middle_points, center1, center2);
+	//Draw_Points(output, Left_points, Right_points, Middle_points);
 }
 
 void LaneDetector::Dev_Lines(std::vector<std::vector<cv::Point> > &input_white, std::vector<cv::Point> &left_points, std::vector<cv::Point> &right_points, std::vector<cv::Point> &middle_points, cv::Point A, cv::Point B)
@@ -193,20 +198,24 @@ double LaneDetector::Alfa_Val(cv::Point A, cv::Point B, cv::Point C)
 	return alfa;
 }
 
-void LaneDetector::Draw_Points(cv::Mat &frame, std::vector<cv::Point> left_points, std::vector<cv::Point> right_points, std::vector<cv::Point> middle_points)
+void LaneDetector::Draw_Points(cv::Mat &frame)
 {
-	for (int i = 0; i < left_points.size(); i++)
-	{
-		cv::circle(frame, left_points[i], 3, cv::Scalar(0, 255, 0), CV_FILLED, cv::LINE_AA);
-	}
-	for (int i = 0; i < right_points.size(); i++)
-	{
-		cv::circle(frame, right_points[i], 3, cv::Scalar(255, 0, 0), CV_FILLED, cv::LINE_AA);
-	}
-	for (int i = 0; i < middle_points.size(); i++)
-	{
-		cv::circle(frame, middle_points[i], 3, cv::Scalar(0, 0, 255), CV_FILLED, cv::LINE_AA);
-	}
+	frame = cv::Mat::zeros(frame.size(), CV_8UC3);
+	if(right_points_index_ >= 0)
+		for (int i = 0; i < points_vector_[right_points_index_].size(); i++)
+		{
+			cv::circle(frame, points_vector_[right_points_index_][i], 3, cv::Scalar(255, 0, 0), CV_FILLED, cv::LINE_AA);
+		}
+	if(left_points_index_ >= 0)
+		for (int i = 0; i < points_vector_[left_points_index_].size(); i++)
+		{
+			cv::circle(frame, points_vector_[left_points_index_][i], 3, cv::Scalar(0, 0, 255), CV_FILLED, cv::LINE_AA);
+		}
+	if(middle_points_index_ >= 0)
+		for (int i = 0; i < points_vector_[middle_points_index_].size(); i++)
+		{
+			cv::circle(frame, points_vector_[middle_points_index_][i], 3, cv::Scalar(0, 255, 0), CV_FILLED, cv::LINE_AA);
+		}
 }
 
 void LaneDetector::Homography(cv::Mat input_frame, cv::Mat &homography_frame)
@@ -259,11 +268,11 @@ void LaneDetector::Homography(cv::Mat input_frame, cv::Mat &homography_frame)
 
 void LaneDetector::openCVVisualization()
 {
-	cv::imshow("Raw image", current_frame_);
-	cv::imshow("Binarization", binary_frame_);
+	//cv::imshow("Raw image", current_frame_);
+	//cv::imshow("Binarization", binary_frame_);
 	//cv::imshow("Canny", canny_frame_);
-	cv::imshow("Output", visualization_frame_);
 	cv::imshow("Homography", homography_frame_);
+	cv::imshow("Output", visualization_frame_);
 	cv::waitKey(1);
 }
 
@@ -356,4 +365,107 @@ float LaneDetector::getDistance(cv::Point p1, cv::Point p2)
 	float dx = float(p1.x - p2.x);
 	float dy = float(p1.y - p2.y);
 	return sqrtf(dx * dx + dy * dy);
+}
+
+void LaneDetector::recognizeLines()
+{
+	switch (points_vector_.size())
+	{
+	case 1:
+		right_points_index_ = 0;
+		middle_points_index_ = -1;
+		left_points_index_ = -1;
+		break;
+	case 2:
+		if (points_vector_[0][0].x > points_vector_[1][0].x)
+		{
+			right_points_index_ = 0;
+			middle_points_index_ = 1;
+			left_points_index_ = -1;
+		}
+		else
+		{
+			right_points_index_ = 1;
+			middle_points_index_= 0;
+			left_points_index_ = -1;
+		}
+		break;
+	case 3:
+		if (points_vector_[1][0].x > points_vector_[0][0].x)
+		{
+			if (points_vector_[0][0].x > points_vector_[2][0].x)
+			{
+				right_points_index_ = 1;
+				middle_points_index_ = 0;
+				left_points_index_ = 2;
+			}
+			else if (points_vector_[2][0].x > points_vector_[1][0].x)
+			{
+				right_points_index_ = 2;
+				middle_points_index_ = 1;
+				left_points_index_ = 0;
+			}
+			else
+			{
+				right_points_index_ = 1;
+				middle_points_index_ = 2;
+				left_points_index_ = 0;
+			}
+		}
+		else if (points_vector_[1][0].x > points_vector_[2][0].x)
+		{
+			right_points_index_ = 0;
+			middle_points_index_ = 1;
+			left_points_index_ = 2;
+		}
+		else if (points_vector_[0][0].x > points_vector_[2][0].x)
+		{
+			right_points_index_ = 0;
+			middle_points_index_ = 2;
+			left_points_index_ = 1;
+		}
+		else
+		{
+			right_points_index_ = 2;
+			middle_points_index_ = 0;
+			left_points_index_ = 1;
+		}
+		break;
+	default:
+		right_points_index_ = -1;
+		middle_points_index_ = -1;
+		left_points_index_ = -1;
+		break;
+	}
+}
+
+void LaneDetector::publish_markings()
+{
+	selfie_msgs::RoadMarkings road_markings;
+	road_markings.header.stamp = ros::Time::now();
+	road_markings.header.frame_id = "road_markings";
+	geometry_msgs::Point p;
+	p.z = 0;
+	if(right_points_index_ >= 0)
+		for (int i = 0; i < points_vector_[right_points_index_].size(); i++)
+		{
+			p.x = points_vector_[right_points_index_][i].x;
+			p.y = points_vector_[right_points_index_][i].y;
+			road_markings.right_line.push_back(p);
+		}
+	if(left_points_index_ >= 0)
+		for (int i = 0; i < points_vector_[left_points_index_].size(); i++)
+		{
+			p.x = points_vector_[left_points_index_][i].x;
+			p.y = points_vector_[left_points_index_][i].y;
+			road_markings.left_line.push_back(p);
+		}
+	if(middle_points_index_ >= 0)
+		for (int i = 0; i < points_vector_[middle_points_index_].size(); i++)
+		{
+			p.x = points_vector_[middle_points_index_][i].x;
+			p.y = points_vector_[middle_points_index_][i].y;
+			road_markings.center_line.push_back(p);
+		}
+	lines_pub_.publish(road_markings);
 }
