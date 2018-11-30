@@ -18,6 +18,7 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	binary_treshold_(180),
 	mask_initialized_(false),
 	visualize_(true),
+	max_mid_line_gap_(90),
 
 	kernel_v_(),
 	current_frame_(),
@@ -81,12 +82,11 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 	cv::medianBlur(canny_frame_, canny_frame_, 5);
 	cv::filter2D(canny_frame_, canny_frame_, -1, kernel_v_, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
 
-	points_vector_.clear();
 	visualization_frame_.rows = current_frame_.rows;
 	visualization_frame_.cols = current_frame_.cols;
 	detectLine_both(canny_frame_, points_vector_);
+	mergeMiddleLane();
 	drawPoints_both(points_vector_, visualization_frame_);
-	AvgSlope(points_vector_, visualization_frame_);
 
 	if (visualize_)
 	{
@@ -265,4 +265,95 @@ void LaneDetector::openCVVisualization()
 	cv::imshow("Output", visualization_frame_);
 	cv::imshow("Homography", homography_frame_);
 	cv::waitKey(1);
+}
+
+void LaneDetector::quickSortLinesY(int left, int right)
+{
+	int i = left;
+	int j = right;
+	int y = points_vector_[(left + right) / 2][0].y;
+	do
+	{
+		while (points_vector_[i][0].y > y)
+			i++;
+
+		while (points_vector_[j][0].y < y)
+			j--;
+
+		if (i <= j)
+		{
+			points_vector_[i].swap(points_vector_[j]);
+
+			i++;
+			j--;
+		}
+	} while (i <= j);
+
+	if (left < j)
+		LaneDetector::quickSortLinesY(left, j);
+
+	if (right > i)
+		LaneDetector::quickSortLinesY(i, right);
+}
+
+void LaneDetector::quickSortPointsY(std::vector<cv::Point> &vector_in, int left, int right)
+{
+	int i = left;
+	int j = right;
+	int y = vector_in[(left + right) / 2].y;
+	do
+	{
+		while (vector_in[i].y > y)
+			i++;
+
+		while (vector_in[j].y < y)
+			j--;
+
+		if (i <= j)
+		{
+			cv::Point temp = vector_in[i];
+			vector_in[i] = vector_in[j];
+			vector_in[j] = temp;
+
+			i++;
+			j--;
+		}
+	} while (i <= j);
+
+	if (left < j)
+		LaneDetector::quickSortPointsY(vector_in, left, j);
+
+	if (right > i)
+		LaneDetector::quickSortPointsY(vector_in, i, right);
+}
+
+void LaneDetector::mergeMiddleLane()
+{
+	for (int i = 0; i < points_vector_.size(); i++)
+	{
+		quickSortPointsY(points_vector_[i], 0, points_vector_[i].size() - 1);
+	}
+	quickSortLinesY(0, points_vector_.size() - 1);
+
+	for (int i = 0; i < points_vector_.size(); i++)
+	{
+		for (int j = i + 1; j < points_vector_.size(); j++)
+		{
+			float distance = getDistance(points_vector_[j][0], points_vector_[i][points_vector_[i].size() - 1]);
+
+			if (distance < max_mid_line_gap_)
+			{
+				points_vector_[i].insert(points_vector_[i].end(), points_vector_[j].begin(), points_vector_[j].end());
+				points_vector_.erase(points_vector_.begin() + j);
+				j--;
+			}
+		}
+	}
+}
+
+float LaneDetector::getDistance(cv::Point p1, cv::Point p2)
+{
+	float dx = float(p1.x - p2.x);
+	float dy = float(p1.y - p2.y);
+	return sqrtf(dx * dx + dy * dy);
 }

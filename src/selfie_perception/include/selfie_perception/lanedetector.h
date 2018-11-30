@@ -29,7 +29,6 @@ class LaneDetector
 	ros::Publisher lines_pub_;
 
 	cv::Mat kernel_v_;
-	cv::Mat cam2world_;
 	cv::Mat current_frame_;
 	cv::Mat gray_frame_;
 	cv::Mat binary_frame_;
@@ -42,6 +41,10 @@ class LaneDetector
 
 	void imageCallback(const sensor_msgs::ImageConstPtr &msg);
 	void openCVVisualization();
+	void mergeMiddleLane();
+	void quickSortLinesY(int left, int right);
+	void quickSortPointsY(std::vector<cv::Point> &vector_in, int left, int right);
+	float getDistance(cv::Point p1, cv::Point p2);
 
 	void detectLine_both(cv::Mat &input_white, std::vector<std::vector<cv::Point> > &output_white);
 	void drawPoints_both(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output_white);
@@ -54,6 +57,7 @@ class LaneDetector
 	int binary_treshold_;
 	bool mask_initialized_;
 	bool visualize_;
+	float max_mid_line_gap_;
 
 	std::vector<cv::Point> Left_points;
 	std::vector<cv::Point> Right_points;
