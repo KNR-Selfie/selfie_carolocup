@@ -55,7 +55,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
-
+  <run_depend>teleop_twist_keyboard</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
