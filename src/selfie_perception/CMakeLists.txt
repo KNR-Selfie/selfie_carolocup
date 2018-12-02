@@ -219,8 +219,8 @@ install(DIRECTORY config/
 
 add_executable(detect_obstacles src/detect_obstacles.cpp src/obstacles_generator.cpp)
 target_link_libraries(detect_obstacles ${catkin_LIBRARIES})
-add_dependencies(detect_obstacles detect_obstacles_generate_messages_cpp)
+add_dependencies(detect_obstacles ${catkin_EXPORTED_TARGETS})
 
 add_executable(detect_markings src/cam.cpp src/lanedetector.cpp)
 target_link_libraries(detect_markings ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(detect_markings detect_markings_generate_messages_cpp)
+add_dependencies(detect_markings ${catkin_EXPORTED_TARGETS})
