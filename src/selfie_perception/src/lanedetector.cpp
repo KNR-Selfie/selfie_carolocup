@@ -15,10 +15,11 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	nh_(nh),
 	pnh_(pnh),
 	it_(nh),
-	binary_treshold_(180),
+	binary_treshold_(195),
 	mask_initialized_(false),
 	visualize_(true),
-	max_mid_line_gap_(90),
+	max_mid_line_gap_(155),
+	max_mid_line_X_gap_ (80),
 	left_points_index_(-1),
 	right_points_index_(-1),
 	middle_points_index_(-1),
@@ -82,12 +83,16 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 	cv::cvtColor(homography_frame_, gray_frame_, cv::COLOR_BGR2GRAY);
 	cv::threshold(gray_frame_, binary_frame_, binary_treshold_, 255, cv::THRESH_BINARY);
 	cv::bitwise_and(binary_frame_, mask_, canny_frame_);
-	cv::medianBlur(canny_frame_, canny_frame_, 5);
-	cv::filter2D(canny_frame_, canny_frame_, -1, kernel_v_, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
+	cv::medianBlur(binary_frame_, canny_frame_, 5);
+	cv::filter2D(binary_frame_, canny_frame_, -1, kernel_v_, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
 
 	detectLine_both(canny_frame_, points_vector_);
-	mergeMiddleLane();
-	recognizeLines();
+	if(!points_vector_.empty())
+	{
+		mergeMiddleLane();
+		recognizeLines();
+		publish_markings();
+	}
 
 	if (visualize_)
 	{
@@ -96,7 +101,6 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 		Draw_Points(visualization_frame_);
 		openCVVisualization();
 	}
-	publish_markings();
 }
 
 void LaneDetector::detectLine_both(cv::Mat &input_white, std::vector<std::vector<cv::Point> > &output_white)
@@ -269,7 +273,7 @@ void LaneDetector::Homography(cv::Mat input_frame, cv::Mat &homography_frame)
 void LaneDetector::openCVVisualization()
 {
 	//cv::imshow("Raw image", current_frame_);
-	//cv::imshow("Binarization", binary_frame_);
+	cv::imshow("Binarization", binary_frame_);
 	//cv::imshow("Canny", canny_frame_);
 	cv::imshow("Homography", homography_frame_);
 	cv::imshow("Output", visualization_frame_);
@@ -343,14 +347,14 @@ void LaneDetector::mergeMiddleLane()
 		quickSortPointsY(points_vector_[i], 0, points_vector_[i].size() - 1);
 	}
 	quickSortLinesY(0, points_vector_.size() - 1);
-
 	for (int i = 0; i < points_vector_.size(); i++)
 	{
 		for (int j = i + 1; j < points_vector_.size(); j++)
 		{
 			float distance = getDistance(points_vector_[j][0], points_vector_[i][points_vector_[i].size() - 1]);
+			float distance_x = std::abs(points_vector_[j][0].x - points_vector_[i][points_vector_[i].size() - 1].x);
 
-			if (distance < max_mid_line_gap_)
+			if (distance < max_mid_line_gap_ && distance_x < max_mid_line_X_gap_)
 			{
 				points_vector_[i].insert(points_vector_[i].end(), points_vector_[j].begin(), points_vector_[j].end());
 				points_vector_.erase(points_vector_.begin() + j);

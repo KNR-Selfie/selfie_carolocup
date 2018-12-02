@@ -65,6 +65,7 @@ class LaneDetector
 	bool mask_initialized_;
 	bool visualize_;
 	float max_mid_line_gap_;
+	float max_mid_line_X_gap_;
 
 	double slope;
 	double act_slope;
