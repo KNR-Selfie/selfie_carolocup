@@ -154,14 +154,25 @@ void poly::fit_middle(poly left, poly right, int degree)
 {
     this->x_raw_pts.clear();
     this->y_raw_pts.clear();
+    float avg = 0;
 
-    for(int i = 0;i<100;i++)
+    if(left.x_raw_pts.empty() || right.x_raw_pts.empty())
+        return;
+
+    float min_size = 0;
+    float left_size = left.x_raw_pts[left.x_raw_pts.size()-1];
+    float right_size = right.x_raw_pts[right.x_raw_pts.size()-1];
+
+    if(left_size>=right_size)
+        min_size = right_size;
+    else
+        min_size = left_size;
+
+    for(int i = 0;i<(int)min_size;i+=4)
     {
-        this->x_raw_pts.push_back(i*3);
-        this->y_raw_pts.push_back(left.polyval(i*3));
-
-        this->x_raw_pts.push_back(i*3+1);
-        this->y_raw_pts.push_back(right.polyval(i*3+1));
+        avg = (left.polyval(i) - right.polyval(i))/2 + right.polyval(i);
+        this->x_raw_pts.push_back(i);
+        this->y_raw_pts.push_back(avg);
     }
 
     this->polyfit(degree);

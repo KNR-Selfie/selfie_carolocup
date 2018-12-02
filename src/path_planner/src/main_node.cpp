@@ -39,7 +39,7 @@ void road_markingsCallback(const selfie_msgs::RoadMarkings::ConstPtr& msg)
     right_line.get_row_pts(msg->right_line);
     right_line.polyfit(3);
 
-    middle_path.fit_middle(center_line,right_line,3);
+    middle_path.fit_middle(center_line,right_line,7);
     path_tangent.calc_coeff(middle_path,1);
 
     position_offset_pub.publish(middle_path.get_pos_offset(0,MAT_WIDTH/2));

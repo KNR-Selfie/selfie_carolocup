@@ -7,18 +7,22 @@ void RoadMarkings_to_cloud(const selfie_msgs::RoadMarkings::ConstPtr& msg, senso
 {
     geometry_msgs::Point32 point;
 
-    for(int i = 0;i<msg->left_line.size();i++)
+    for(int i = 0;i<msg->center_line.size();i++)
     {
         point.x = MAT_HEIGHT - msg->center_line[i].y;
         point.y = MAT_WIDTH - msg->center_line[i].x;
 
         points_preview.points.push_back(point);
-
+    }
+    for(int i = 0;i<msg->left_line.size();i++)
+    {
         point.x = MAT_HEIGHT - msg->left_line[i].y;
         point.y = MAT_WIDTH - msg->left_line[i].x;
 
         points_preview.points.push_back(point);
-
+    }
+    for(int i = 0;i<msg->right_line.size();i++)
+    {
         point.x = MAT_HEIGHT - msg->right_line[i].y;
         point.y = MAT_WIDTH - msg->right_line[i].x;
 
