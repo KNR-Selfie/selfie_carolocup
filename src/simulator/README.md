@@ -10,7 +10,7 @@ rosrun selfie_sim_control keyboard_teleop.py
 
 ### Subscribed topics
 
-"/simulator_steering_ackermann/teleop"
+"/keyboard_steering_ackermann/teleop"
  ([ackermann_msgs/AckermannDriveStamped](http://docs.ros.org/api/ackermann_msgs/html/msg/AckermannDriveStamped.html))
  This topic is where you can put your steering commands to drive Selfie in simulator
 
