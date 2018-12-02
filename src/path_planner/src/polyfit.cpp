@@ -1,4 +1,6 @@
 #include <path_planner/polyfit.hpp>
+#include "math.h"
+#include "path_planner/path_planner.h"
 
 
 poly::poly()
@@ -24,6 +26,9 @@ poly::poly()
 
 void poly::polyfit(int nDegree )
 {
+    if(x_raw_pts.size() < nDegree)
+        return;
+
     using namespace boost::numeric::ublas;
 
     if ( x_raw_pts.size() != y_raw_pts.size() )
@@ -52,7 +57,6 @@ void poly::polyfit(int nDegree )
             nVal *= x_raw_pts[nRow];
         }
     }
-
     // transpose X matrix
     matrix<float> oXtMatrix( trans(oXMatrix) );
     // multiply transposed X matrix with X matrix
@@ -113,6 +117,27 @@ void poly::polyval()
     y_output_pts = output;
 }
 
+
+float poly::polyval(float x)
+{
+    size_t nDegree = coeff.size();
+    float output;
+
+    double nY = 0;
+    double nXdouble = 1;
+    double nX = x;
+
+    for ( size_t j = 0; j < nDegree; j++ )
+    {
+        // multiply current x by a coefficient
+        nY += coeff[j] * nXdouble;
+        // power up the X
+        nXdouble *= nX;
+    }
+    output = nY;
+    return nY;
+}
+
 void poly::get_row_pts(const std::vector<geometry_msgs::Point> point_vec)
 {
     x_raw_pts.clear();
@@ -120,38 +145,72 @@ void poly::get_row_pts(const std::vector<geometry_msgs::Point> point_vec)
 
     for(int i = 0;i<point_vec.size();i++)
     {
-        x_raw_pts.push_back(point_vec[i].x);
-        y_raw_pts.push_back(point_vec[i].y);
+        x_raw_pts.push_back(MAT_HEIGHT - point_vec[i].y);
+        y_raw_pts.push_back(MAT_WIDTH - point_vec[i].x);
     }
-
 }
 
-void poly::find_middle(poly left, poly right)
+void poly::fit_middle(poly left, poly right, int degree)
 {
-    //reduce point number
-    x_raw_pts.reserve( left.x_raw_pts.size() + right.x_raw_pts.size()); // preallocate memory
-    x_raw_pts.insert( x_raw_pts.end(), left.x_raw_pts.begin(), left.x_raw_pts.end() );
-    x_raw_pts.insert( x_raw_pts.end(), right.x_raw_pts.begin(), right.x_raw_pts.end() );
+    this->x_raw_pts.clear();
+    this->y_raw_pts.clear();
 
-    y_raw_pts.reserve( left.y_raw_pts.size() + right.y_raw_pts.size()); // preallocate memory
-    y_raw_pts.insert( y_raw_pts.end(), left.y_raw_pts.begin(), left.y_raw_pts.end() );
-    y_raw_pts.insert( y_raw_pts.end(), right.y_raw_pts.begin(), right.y_raw_pts.end() );
-
-    this->polyfit(7);
-    this->polyval();
-}
-
-tangent::tangent()
-{
-
-}
-void tangent::calc(poly polynom,float x)
-{
-    float value = 0;
-    int degree = polynom.coeff.size();
-    for(int i = 0;i<degree;i++)
+    for(int i = 0;i<100;i++)
     {
-        value += i*polynom.coeff[i]*pow(x,i-1);
+        this->x_raw_pts.push_back(i*3);
+        this->y_raw_pts.push_back(left.polyval(i*3));
+
+        this->x_raw_pts.push_back(i*3+1);
+        this->y_raw_pts.push_back(right.polyval(i*3+1));
     }
+
+    this->polyfit(degree);
+}
+
+std_msgs::Float64 poly::get_pos_offset(float x, float y)
+{
+    std_msgs::Float64 message;
+    message.data = y - polyval(x);
+
+    return message;
+}
+
+//TANGENT METHODS/////////////////////
+tangent::tangent(float a,float b)
+{
+    this->coeff[1] = a;
+    this->coeff[0] = b;
+}
+
+void tangent::calc_coeff(poly polynom,float x)
+{
+    double derive = 0;
+    int degree = polynom.coeff.size();
+    double nXdouble = 1;
+    double nX = x;
+
+    for ( size_t j = 1; j < degree; j++ )
+    {
+        // multiply current x by a coefficient
+        derive += j*polynom.coeff[j] * nXdouble;
+        // power up the X
+        nXdouble *= nX;
+    }
+
+    this->coeff[1] = derive; //a
+    this->coeff[0] = - derive*x+polynom.polyval(x); //b
+}
+
+void tangent::set_coeff(float a, float b)
+{
+    this->coeff[0] = b;
+    this->coeff[1] = a;
+}
+
+std_msgs::Float64 tangent::get_head_offset(tangent tg)
+{
+    std_msgs::Float64 message;
+    message.data = atan((this->coeff[1]-tg.coeff[1])/(1+this->coeff[1]*tg.coeff[1]));
+    return message;
 
 }

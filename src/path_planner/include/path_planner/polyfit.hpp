@@ -16,6 +16,7 @@
 
 #include "geometry_msgs/Point32.h"
 #include "geometry_msgs/Point.h"
+#include "std_msgs/Float64.h"
 
 class poly
 {
@@ -28,8 +29,10 @@ public:
   poly();
   void polyfit(int nDegree );
   void polyval();
+  float polyval(float x);
   void get_row_pts(const std::vector<geometry_msgs::Point> point_vec);
-  void find_middle(poly left,poly right);
+  void fit_middle(poly left,poly right,int degree);
+  std_msgs::Float64 get_pos_offset(float x, float y);
 };
 
 
@@ -37,7 +40,9 @@ class tangent
 {
     float coeff[2];
 public:
-    tangent();
-    void calc(poly polynom,float x);
-
+    tangent(float a = 0, float b = 0);
+    void calc_coeff(poly polynom,float x);
+    float calc_angle(tangent tg);
+    void set_coeff(float a, float b);
+    std_msgs::Float64 get_head_offset(tangent tg);
 };
