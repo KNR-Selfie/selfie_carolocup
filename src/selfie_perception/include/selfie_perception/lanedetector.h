@@ -11,9 +11,6 @@
 #include <selfie_msgs/RoadMarkings.h>
 #include <geometry_msgs/Point.h>
 
-#define IDS_WIDTH 752
-#define IDS_HEIGHT 360
-
 #define PI 3.1415926
 
 class LaneDetector
@@ -28,7 +25,7 @@ class LaneDetector
 	ros::NodeHandle pnh_;
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
-	ros::Publisher lines_pub_;
+	ros::Publisher lanes_pub_;
 
 	cv::Mat kernel_v_;
 	cv::Mat current_frame_;
@@ -39,10 +36,8 @@ class LaneDetector
 	cv::Mat visualization_frame_;
 	cv::Mat homography_frame_;
 
-	std::vector<std::vector<cv::Point> > points_vector_;
-	int left_points_index_;
-	int right_points_index_;
-	int middle_points_index_;
+	std::vector<std::vector<cv::Point> > lanes_vector_;
+	std::vector<std::vector<cv::Point> > lanes_vector_last_frame;
 
 	void imageCallback(const sensor_msgs::ImageConstPtr &msg);
 	void openCVVisualization();
@@ -51,26 +46,15 @@ class LaneDetector
 	void quickSortPointsY(std::vector<cv::Point> &vector_in, int left, int right);
 	float getDistance(cv::Point p1, cv::Point p2);
 	void recognizeLines();
-	void publish_markings();
+	void publishMarkings();
 
-	void detectLine_both(cv::Mat &input_white, std::vector<std::vector<cv::Point> > &output_white);
-	void drawPoints_both(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output_white);
-	void Dev_Lines(std::vector<std::vector<cv::Point> > &input_white, std::vector<cv::Point> &left_points, std::vector<cv::Point> &right_points, std::vector<cv::Point> &middle_points, cv::Point A, cv::Point B);
-	double Alfa_Val(cv::Point A, cv::Point B, cv::Point C);
-	void Draw_Points(cv::Mat &frame);
-	void AvgSlope(std::vector<std::vector<cv::Point> > &input_white, cv::Mat &output);
-	void Homography(cv::Mat input_frame, cv::Mat &homography_frame);
+	void detectLines(cv::Mat &input_frame, std::vector<std::vector<cv::Point> > &output_lanes);
+	void drawPoints(cv::Mat &frame);
+	void homography(cv::Mat input_frame, cv::Mat &homography_frame);
 
 	int binary_treshold_;
 	bool mask_initialized_;
 	bool visualize_;
 	float max_mid_line_gap_;
 	float max_mid_line_X_gap_;
-
-	double slope;
-	double act_slope;
-	double last_slope;
-	int count;
-
-	std::vector<cv::Vec4i> hierarchy_detectline;
 };
