@@ -43,8 +43,14 @@ bool LaneDetector::init()
 	kernel_v_.at<float>(0, 1) = 0;
 	kernel_v_.at<float>(0, 2) = 1;
 
+	pnh_.getParam("binary_treshold",binary_treshold_);
+	pnh_.getParam("visualize",visualize_);
+    pnh_.getParam("max_mid_line_gap",max_mid_line_gap_);
+    pnh_.getParam("max_mid_line_X_gap",max_mid_line_X_gap_);
+
 	image_sub_ = it_.subscribe("/image_raw", 1, &LaneDetector::imageCallback, this);
 
+	printInfoParams();
 	return true;
 }
 
@@ -380,4 +386,13 @@ void LaneDetector::publishMarkings()
 			road_markings.center_line.push_back(p);
 		}
 	lanes_pub_.publish(road_markings);
+}
+
+void LaneDetector::printInfoParams()
+{
+    ROS_INFO("binary_treshold: %.3f",binary_treshold_);
+    ROS_INFO("max_mid_line_gap: %.3f",max_mid_line_gap_);
+    ROS_INFO("max_mid_line_X_gap: %.3f\n",max_mid_line_X_gap_);
+
+    ROS_INFO("visualize: %d\n",visualize_);
 }

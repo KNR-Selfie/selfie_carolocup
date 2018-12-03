@@ -47,12 +47,12 @@ class LaneDetector
 	float getDistance(cv::Point p1, cv::Point p2);
 	void recognizeLines();
 	void publishMarkings();
-
 	void detectLines(cv::Mat &input_frame, std::vector<std::vector<cv::Point> > &output_lanes);
 	void drawPoints(cv::Mat &frame);
 	void homography(cv::Mat input_frame, cv::Mat &homography_frame);
+	void printInfoParams();
 
-	int binary_treshold_;
+	float binary_treshold_;
 	bool mask_initialized_;
 	bool visualize_;
 	float max_mid_line_gap_;
