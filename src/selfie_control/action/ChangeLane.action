@@ -1,0 +1,11 @@
+##Goal definition
+
+
+#true iff left is target
+bool left_lane
+
+---
+##Define result
+
+---
+#Define a feedback message

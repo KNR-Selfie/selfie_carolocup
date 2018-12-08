@@ -10,7 +10,11 @@ project(selfie_control)
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   ackermann_msgs
+  actionlib_msgs
+  actionlib
+  genmsg
   rospy
+  roscpp
   std_msgs
 )
 
@@ -62,17 +66,15 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  DIRECTORY action
+  FILES ChangeLane.action
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   ackermann_msgs#   std_msgs
-# )
+ generate_messages(
+   DEPENDENCIES actionlib_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -198,3 +200,11 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+include_directories(include ${catkin_INCLUDE_DIRS})
+
+add_executable(change_lane src/change_lane.cpp src/ChangeLane.cpp)
+target_link_libraries(change_lane ${catkin_LIBRARIES})
+
+add_executable(change_lane_client src/ChangeLaneClient.cpp)
+target_link_libraries(change_lane_client ${catkin_LIBRARIES})
+
