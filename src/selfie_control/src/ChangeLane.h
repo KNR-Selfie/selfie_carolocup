@@ -20,8 +20,8 @@ class ChangeLane
 	ChangeLane(const ros::NodeHandle &nh, const ros::NodeHandle &pnh);
 	~ChangeLane();
 	bool init(void);
-    void send_target_position(void);
-    void execute(const selfie_control::ChangeLaneGoalConstPtr& goal, Server* as);
+    void send_publishers_msgs(void);
+    void compute_target_position(void);
     float target_position;
 
   private:
@@ -32,6 +32,7 @@ class ChangeLane
 	ros::Publisher target_publisher;
     ros::Publisher left_turn_indicator_publisher;
     ros::Publisher right_turn_indicator_publisher;
+    //msgs for publishers
     std_msgs::Float64 target_msg;
     std_msgs::Bool left_turn_indicator_msg;
     std_msgs::Bool right_turn_indicator_msg;
@@ -39,12 +40,16 @@ class ChangeLane
     ros::Subscriber position_offset_subscriber;
     void position_offset_callback(const std_msgs::Float64::ConstPtr& msg);
 
+    //communitation functions
+    void send_target_position(void);
+    void send_indicator_msgs(void);
 
+    //private variables
+    bool left_turn_indicator;
+    bool right_turn_indicator;
     float error_margin;
     float lane_width;
     float position_offset;
-
-    float visualize_;
 
 };
 
