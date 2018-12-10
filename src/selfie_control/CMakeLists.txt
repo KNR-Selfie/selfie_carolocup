@@ -205,6 +205,8 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_executable(change_lane src/change_lane.cpp src/ChangeLane.cpp)
 target_link_libraries(change_lane ${catkin_LIBRARIES})
 
-add_executable(change_lane_client src/ChangeLaneClient.cpp)
-target_link_libraries(change_lane_client ${catkin_LIBRARIES})
+add_executable(demo_change_lane src/demo_change_lane.cpp)
+target_link_libraries(demo_change_lane ${catkin_LIBRARIES})
 
+add_executable(demo_position src/demo_position.cpp)
+target_link_libraries(demo_position ${catkin_LIBRARIES})

@@ -23,6 +23,8 @@ class ChangeLane
     void send_publishers_msgs(void);
     void compute_target_position(void);
     float target_position;
+    bool be_on_left_lane;
+    bool maneuver_done;
 
   private:
 	ros::NodeHandle nh_;
