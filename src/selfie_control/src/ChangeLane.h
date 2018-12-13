@@ -17,11 +17,11 @@ typedef actionlib::SimpleActionServer<selfie_control::ChangeLaneAction> Server;
 class ChangeLane
 {
   public:
-	ChangeLane(const ros::NodeHandle &nh, const ros::NodeHandle &pnh);
+	ChangeLane(const ros::NodeHandle &nh, const ros::NodeHandle &pnh,float lane_width_param, float error_margin_param);
 	~ChangeLane();
 	bool init(void);
     void send_publishers_msgs(void);
-    void compute_target_position(void);
+    bool process_target_position(void);
     float target_position;
     bool be_on_left_lane;
     bool maneuver_done;
