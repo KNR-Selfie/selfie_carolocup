@@ -1,15 +1,18 @@
 #include <selfie_control/ChangeLaneAction.h> // Note: "Action" is appended
-#include <actionlib/client/simple_action_client.h>
+#include <actionlib/client/action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <string>
 
-typedef actionlib::SimpleActionClient<selfie_control::ChangeLaneAction> Client;
+typedef actionlib::ActionClient<selfie_control::ChangeLaneAction> Client;
+
+void action_status_callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
 
 int main(int argc, char** argv)
 {
   //create node
   ros::init(argc, argv, "demo_change_lane");
   ros::NodeHandle nh("~");
+  ros::Subscriber status_subscriber = nh.subscribe("action_status", 10, &action_status_callback);
   std::string param;
   std::string lane;
 
@@ -30,8 +33,8 @@ int main(int argc, char** argv)
   }
 
   //create client for action server
-  Client client("change_lane", true); // true -> don't need ros::spin()
-  client.waitForServer();
+  Client client(nh,"change_lane"); 
+  client.waitForActionServerToStart(ros::Duration(5,0));
   ROS_INFO("Action server started");
 
   selfie_control::ChangeLaneGoal goal;
@@ -44,11 +47,24 @@ int main(int argc, char** argv)
     goal.left_lane = true;
   }
   client.sendGoal(goal);
-  client.waitForResult(ros::Duration(5.0));
+  //client.waitForResult(ros::Duration(5.0));
 
-  if (client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+  /*if (client.getState() == actionlib::ClientGoalState::SUCCEEDED)
     printf("Yay! We have changed lane");
+  else if (client.getState() == actionlib::ClientGoalState::REJECTED)
+    printf("No, we are on this lane. No change");
+  if (client.getState() == actionlib::ClientGoalState::ACTIVE){
+    printf("Aktywny");
   
-  printf("Current State: %s\n", client.getState().toString().c_str());
+  }*/
+
+  //printf("Current State: %s\n", client.getState().toString().c_str());
   return 0;
+}
+
+//callback from subscriber with information about position goal
+void action_status_callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg)
+{
+    //uint8_t status = msg->status;
+    //ROS_INFO("Status: %d",status);
 }
