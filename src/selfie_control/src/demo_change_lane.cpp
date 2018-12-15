@@ -5,6 +5,9 @@
 
 typedef actionlib::SimpleActionClient<selfie_control::ChangeLaneAction> Client;
 
+void done_callback(const actionlib::SimpleClientGoalState &state, const selfie_control::ChangeLaneResultConstPtr& result);
+void active_callback();
+
 int main(int argc, char** argv)
 {
   //create node
@@ -32,7 +35,7 @@ int main(int argc, char** argv)
   //create client for action server
   Client client("change_lane", true); // true -> don't need ros::spin()
   client.waitForServer();
-  ROS_INFO("Action server started");
+  ROS_INFO("Action server started. Sending goal");
 
   selfie_control::ChangeLaneGoal goal;
 
@@ -43,12 +46,21 @@ int main(int argc, char** argv)
   else{
     goal.left_lane = true;
   }
-  client.sendGoal(goal);
-  client.waitForResult(ros::Duration(5.0));
-
-  if (client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-    printf("Yay! We have changed lane");
+  client.sendGoal(goal, &done_callback, &active_callback);
   
-  printf("Current State: %s\n", client.getState().toString().c_str());
+  ros::spin();
+
   return 0;
 }
+
+
+void done_callback(const actionlib::SimpleClientGoalState &state, const selfie_control::ChangeLaneResultConstPtr& result){
+  ROS_INFO("Finished in state [%s]", state.toString().c_str());
+  ROS_INFO("Answer: %d", static_cast<int>(result->changed_lane));
+  ros::shutdown();
+}
+
+void active_callback(){
+  ROS_INFO("Goal just went active");
+}
+

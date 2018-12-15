@@ -6,6 +6,6 @@ bool left_lane
 
 ---
 ##Define result
-
+bool changed_lane
 ---
 #Define a feedback message
