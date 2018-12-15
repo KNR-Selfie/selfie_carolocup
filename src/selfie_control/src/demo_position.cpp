@@ -1,3 +1,6 @@
+/*
+ONLY FOR DEMO USE
+*/
 #include "ros/ros.h"
 #include "std_msgs/Float64.h"
 
@@ -10,21 +13,22 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, "demo_position");
 
+  ros::NodeHandle pnh("~");
   ros::NodeHandle n;
   ros::Publisher offset_publisher = n.advertise<std_msgs::Float64>("position_offset", 100);
   ros::Subscriber target_subscriber = n.subscribe("target_offset", 1, positionCallback);
   std_msgs::Float64 offset_msg;
-  offset_msg.data = 0.51f;
+  float lane_width = 1.f;
+  pnh.getParam("lane_width",lane_width);
+  offset_msg.data = -lane_width/2-0.01;
   while (ros::ok())
   {
-    
-    ROS_INFO("%f",target);
     offset_msg.data +=target/10;
-    if(offset_msg.data>0.49){ 
-      offset_msg.data = 0.51;
+    if(offset_msg.data>lane_width/2){ 
+      offset_msg.data = lane_width/2+0.01;
     }
-    if(offset_msg.data<-0.49){ 
-      offset_msg.data = -0.51;
+    if(offset_msg.data<-lane_width/2){ 
+      offset_msg.data = -lane_width/2-0.01;
     }
     
     ros::Duration(0.1).sleep();
