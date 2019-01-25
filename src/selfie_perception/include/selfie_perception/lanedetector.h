@@ -106,6 +106,7 @@ class LaneDetector
 	void calcRoadWidth();
 	void generatePoints();
 	void removeHorizontalLines();
+	std::vector<cv::Point2f> createOffsetLine(std::vector<float> coeff, float offset);
 
 	float min_length_search_line_;
 	float min_length_lane_;
@@ -115,10 +116,11 @@ class LaneDetector
 
 	std::string config_file_;
 	float binary_treshold_;
-	bool visualize_;
+	bool debug_mode_;
 	float max_mid_line_distance_;
 	float max_mid_line_gap_;
 	bool init_imageCallback_;
 	float nominal_center_line_Y_;
 	float points_density_;
+	int poly_nDegree_;
 };
