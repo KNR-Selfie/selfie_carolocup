@@ -44,8 +44,6 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	binary_frame_(),
 	dynamic_mask_(),
 	masked_frame_(),
-	crossing_ROI_(),
-	crossing_frame_(),
 	canny_frame_(),
 	visualization_frame_(),
 	homography_frame_()
@@ -113,22 +111,12 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 
 	if(!init_imageCallback_)
 	{
-		//masked_frame_ = binary_frame_.clone(); //!!!!!!!!!!!!!!!!!!
 		dynamicMask(binary_frame_, masked_frame_);
 		if(debug_mode_)
 			cv::bitwise_and(homography_frame_,dynamic_mask_, homography_frame_);
 
-		//crossingLane(binary_frame_, crossing_frame_, aprox_lines_frame_coordinate_);
-
-		//testCrossing = cv::Mat::zeros(homography_frame_.size(),homography_frame_.type());
-		//cv::bitwise_or(homography_frame_,homography_frame_,testCrossing, crossing_ROI_);
-		//cv::bitwise_not(crossing_ROI_,crossing_ROI_);
-
-		//cv::bitwise_and(binary_frame_,crossing_ROI_,masked_frame_);
-
-		//crossingLaneLeft(binary_frame_, crossing_frame_, aprox_lines_frame_coordinate_);
-		//cv::bitwise_not(crossing_ROI_,crossing_ROI_);
-		//cv::bitwise_and(masked_frame_,crossing_ROI_,masked_frame_);
+		ROILaneRight(masked_frame_, masked_frame_);
+		ROILaneLeft(masked_frame_, masked_frame_);
 	}
 	else
 		masked_frame_ = binary_frame_.clone();
@@ -501,71 +489,74 @@ void LaneDetector::dynamicMask(cv::Mat &input_frame, cv::Mat &output_frame)
 	cv::bitwise_and(input_frame, dynamic_mask_, output_frame);
 }
 
-void LaneDetector::crossingLane(cv::Mat &input_frame, cv::Mat &output_frame, std::vector<std::vector<cv::Point2f> > lanes_vector_last_frame)
+void LaneDetector::ROILaneRight(cv::Mat &input_frame, cv::Mat &output_frame)
 {
-	crossing_ROI_ = cv::Mat::zeros(cv::Size(input_frame.cols, input_frame.rows), CV_8UC1);
+	right_lane_ROI_ = cv::Mat::zeros(cv::Size(input_frame.cols, input_frame.rows), CV_8UC1);
 	output_frame = input_frame.clone();
-	int offset_center = 20;
-	int offset_right = 15;
+	float offset_center = -0.05;
+	float offset_right = 0.05;
 	int length;
 
-	int l, k, m = 0;
-	if(right_line_index_ == -1)
-		return;
-	length = lanes_vector_last_frame[2].size() + lanes_vector_last_frame[1].size();
+	std::vector<cv::Point2f> center_line = createOffsetLine(middle_coeff_, offset_center);
+	std::vector<cv::Point2f> right_line = createOffsetLine(right_coeff_, offset_right);
+	cv::transform(center_line, center_line, world2topview_.rowRange(0, 2));
+	cv::transform(right_line, right_line, world2topview_.rowRange(0, 2));
+
+	int c, r;
+	length = center_line.size() + right_line.size();
 	cv::Point points[length];
-	for (l = 0; l < lanes_vector_last_frame[2].size(); l++)
+	for (c = 0; c < center_line.size(); c++)
 	{
-		points[m] = cv::Point(lanes_vector_last_frame[2][l].x - offset_right, lanes_vector_last_frame[2][l].y);
-		m++;
+		points[c] = cv::Point(center_line[c].x, center_line[c].y);
 	}
-	for (k = lanes_vector_last_frame[1].size() - 1; k >= 0; k--)
+	for (r = right_line.size() - 1; r >= 0; r--)
 	{
-		points[m] = cv::Point(lanes_vector_last_frame[1][k].x + offset_center, lanes_vector_last_frame[1][k].y);
-		m++;
-	}
-
-	for (int n = 0; n < length - 1; n++)
-	{
-		cv::line(output_frame, points[n], points[n + 1], cv::Scalar(0, 0, 255), 2);
+		points[c] = cv::Point(right_line[r].x, right_line[r].y);
+		c++;
 	}
 
-	cv::fillConvexPoly(crossing_ROI_, points, length, cv::Scalar(255, 0, 0));
+	cv::fillConvexPoly(right_lane_ROI_, points, length, cv::Scalar(255, 255, 255));
 
-	cv::bitwise_and(input_frame, crossing_ROI_, output_frame);
+	right_lane_frame_ = input_frame.clone();
+	cv::bitwise_and(input_frame, right_lane_ROI_, right_lane_frame_);
+
+	cv::bitwise_not(right_lane_ROI_,right_lane_ROI_);
+	cv::bitwise_and(input_frame, right_lane_ROI_, output_frame);
 }
 
-void LaneDetector::crossingLaneLeft(cv::Mat &input_frame, cv::Mat &output_frame, std::vector<std::vector<cv::Point2f> > lanes_vector_last_frame)
+void LaneDetector::ROILaneLeft(cv::Mat &input_frame, cv::Mat &output_frame)
 {
-	crossing_ROI_ = cv::Mat::zeros(cv::Size(input_frame.cols, input_frame.rows), CV_8UC1);
+	left_lane_ROI_ = cv::Mat::zeros(cv::Size(input_frame.cols, input_frame.rows), CV_8UC1);
 	output_frame = input_frame.clone();
-	int offset_left = 20;
-	int offset_center = 15;
+	float offset_center = 0.05;
+	float offset_left = -0.05;
 	int length;
 
-	int l, k, m = 0;
+	std::vector<cv::Point2f> center_line = createOffsetLine(middle_coeff_, offset_center);
+	std::vector<cv::Point2f> left_line = createOffsetLine(left_coeff_, offset_left);
+	cv::transform(center_line, center_line, world2topview_.rowRange(0, 2));
+	cv::transform(left_line, left_line, world2topview_.rowRange(0, 2));
 
-	length = lanes_vector_last_frame[0].size() + lanes_vector_last_frame[1].size();
+	int c, l;
+	length = center_line.size() + left_line.size();
 	cv::Point points[length];
-	for (l = 0; l < lanes_vector_last_frame[1].size(); l++)
+	for (c = 0; c < center_line.size(); c++)
 	{
-		points[m] = cv::Point(lanes_vector_last_frame[1][l].x - offset_center, lanes_vector_last_frame[1][l].y);
-		m++;
+		points[c] = cv::Point(center_line[c].x, center_line[c].y);
 	}
-	for (k = lanes_vector_last_frame[0].size() - 1; k >= 0; k--)
+	for (l = left_line.size() - 1; l >= 0; l--)
 	{
-		points[m] = cv::Point(lanes_vector_last_frame[0][k].x + offset_left, lanes_vector_last_frame[0][k].y);
-		m++;
-	}
-
-	for (int n = 0; n < length - 1; n++)
-	{
-		cv::line(output_frame, points[n], points[n + 1], cv::Scalar(0, 0, 255), 2);
+		points[c] = cv::Point(left_line[l].x, left_line[l].y);
+		c++;
 	}
 
-	cv::fillConvexPoly(crossing_ROI_, points, length, cv::Scalar(255, 0, 0));
+	cv::fillConvexPoly(left_lane_ROI_, points, length, cv::Scalar(255, 255, 255));
 
-	cv::bitwise_and(input_frame, crossing_ROI_, output_frame);
+	left_lane_frame_ = input_frame.clone();
+	cv::bitwise_and(input_frame, left_lane_ROI_, left_lane_frame_);
+
+	cv::bitwise_not(left_lane_ROI_,left_lane_ROI_);
+	cv::bitwise_and(input_frame, left_lane_ROI_, output_frame);
 }
 
 void LaneDetector::filterSmallLines()
