@@ -82,13 +82,13 @@ class LaneDetector
 	void drawPoints(cv::Mat &frame);
 	void homography(cv::Mat input_frame, cv::Mat &homography_frame);
 	void printInfoParams();
-	void dynamicMask(cv::Mat &input_frame, cv::Mat &output_frame, std::vector<std::vector<cv::Point2f> > lanes_vector_last_frame);
+	void dynamicMask(cv::Mat &input_frame, cv::Mat &output_frame);
 	void crossingLane(cv::Mat &input_frame, cv::Mat &output_frame, std::vector<std::vector<cv::Point2f> > lanes_vector);
 	void crossingLaneLeft(cv::Mat &input_frame, cv::Mat &output_frame, std::vector<std::vector<cv::Point2f> > lanes_vector);
 	void filterSmallLines();
 	void convertCoordinates();
 	float getAproxY(std::vector<float> coeff, float x);
-	void calcValuesForMasks();
+	void convertApproxToFrameCoordinate();
 	void initRecognizeLines();
 	void linesApproximation(std::vector<std::vector<cv::Point2f> > lanes_vector);
 
