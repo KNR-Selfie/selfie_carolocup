@@ -102,7 +102,7 @@ class LaneDetector
 	void removeCar(cv::Mat &frame);
 	void addBottomPoint();
 	bool polyfit(int nDegree, std::vector<cv::Point2f> line, std::vector<float> &coeff);
-	std::vector<float> adjust(std::vector<float> good_poly_coeff, std::vector<cv::Point2f> line);
+	std::vector<float> adjust(std::vector<float> good_poly_coeff, std::vector<cv::Point2f> line, bool left_offset);
 	void calcRoadWidth();
 	void generatePoints();
 	void removeHorizontalLines();

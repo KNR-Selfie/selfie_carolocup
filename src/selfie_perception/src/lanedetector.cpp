@@ -476,9 +476,9 @@ void LaneDetector::dynamicMask(cv::Mat &input_frame, cv::Mat &output_frame)
 	float offset_left = 0.1;
 	output_frame = input_frame.clone();
 	if(right_line_index_ == -1)
-		offset_right = -0.2;
+		offset_right = -0.25;
 	if(left_line_index_ == -1)
-		offset_left = 0.2;
+		offset_left = 0.25;
 
 	std::vector<cv::Point2f> left_line = createOffsetLine(left_coeff_, offset_left);
 	std::vector<cv::Point2f> right_line = createOffsetLine(right_coeff_, offset_right);
@@ -904,7 +904,7 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 			{
 				//l/  c+  r+"
 				l_state = '/';	c_state = '+';	r_state = '+';
-				left_coeff_ = adjust(middle_coeff_, lanes_vector[left_line_index_]);
+				left_coeff_ = adjust(middle_coeff_, lanes_vector[left_line_index_], true);
 			}
 		}
 		else if(shrt_right)
@@ -925,7 +925,7 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 			{
 				//"l+  c+  r/"
 				l_state = '+';	c_state = '+';	r_state = '/';
-				right_coeff_ = adjust(middle_coeff_, lanes_vector[right_line_index_]);
+				right_coeff_ = adjust(middle_coeff_, lanes_vector[right_line_index_], false);
 			}
 		}
 		else if(shrt_middle)
@@ -946,7 +946,7 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 			{
 				//"l+  c/  r+"
 				l_state = '+';	c_state = '/';	r_state = '+';
-				middle_coeff_ = adjust(right_coeff_, lanes_vector[center_line_index_]);
+				middle_coeff_ = adjust(right_coeff_, lanes_vector[center_line_index_], true);
 			}
 		}
 		break;
@@ -962,15 +962,15 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 				{
 					//"l/  c/  r+"
 					l_state = '/';	c_state = '/';	r_state = '+';
-					middle_coeff_ = adjust(right_coeff_, lanes_vector[center_line_index_]);
+					middle_coeff_ = adjust(right_coeff_, lanes_vector[center_line_index_], true);
 
-					left_coeff_= adjust(right_coeff_, lanes_vector[left_line_index_]);
+					left_coeff_= adjust(right_coeff_, lanes_vector[left_line_index_], true);
 				}
 				else if(center_line_index_ != -1)
 				{
 					//"l-  c/  r+"
 					l_state = '-';	c_state = '/';	r_state = '+';
-					middle_coeff_ = adjust(right_coeff_, lanes_vector[center_line_index_]);
+					middle_coeff_ = adjust(right_coeff_, lanes_vector[center_line_index_], true);
 
 					if(!polyfit(poly_nDegree_, createOffsetLine(middle_coeff_, lane_width_), left_coeff_))
 						left_coeff_ = last_left_coeff_;
@@ -979,7 +979,7 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 				{
 					//"l/  c-  r+"
 					l_state = '/';	c_state = '-';	r_state = '+';
-					left_coeff_ = adjust(right_coeff_, lanes_vector[left_line_index_]);
+					left_coeff_ = adjust(right_coeff_, lanes_vector[left_line_index_], true);
 
 					if(!polyfit(poly_nDegree_, createOffsetLine(right_coeff_, lane_width_), middle_coeff_))
 						middle_coeff_ = last_middle_coeff_;
@@ -1006,15 +1006,15 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 				{
 					//"l+  c/  r/"
 					l_state = '+';	c_state = '/';	r_state = '/';
-					middle_coeff_ = adjust(left_coeff_, lanes_vector[center_line_index_]);
+					middle_coeff_ = adjust(left_coeff_, lanes_vector[center_line_index_], false);
 
-					right_coeff_ = adjust(left_coeff_, lanes_vector[right_line_index_]);
+					right_coeff_ = adjust(left_coeff_, lanes_vector[right_line_index_], false);
 				}
 				else if(center_line_index_ != -1)
 				{
 					//"l+  c/  r-"
 					l_state = '+';	c_state = '/';	r_state = '-';
-					middle_coeff_ = adjust(left_coeff_, lanes_vector[center_line_index_]);
+					middle_coeff_ = adjust(left_coeff_, lanes_vector[center_line_index_], false);
 
 					if(!polyfit(poly_nDegree_, createOffsetLine(middle_coeff_, -1 * lane_width_), right_coeff_))
 						right_coeff_ = last_right_coeff_;
@@ -1023,7 +1023,7 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 				{
 					//"l+  c-  r/"
 					l_state = '+';	c_state = '-';	r_state = '/';
-					right_coeff_ = adjust(left_coeff_, lanes_vector[right_line_index_]);
+					right_coeff_ = adjust(left_coeff_, lanes_vector[right_line_index_], false);
 
 					if(!polyfit(poly_nDegree_, createOffsetLine(right_coeff_, lane_width_), middle_coeff_))
 						middle_coeff_ = last_middle_coeff_;
@@ -1050,15 +1050,15 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 				{
 					//"l/  c+  r/"
 					l_state = '/';	c_state = '+';	r_state = '/';
-					left_coeff_ = adjust(middle_coeff_, lanes_vector[left_line_index_]);
+					left_coeff_ = adjust(middle_coeff_, lanes_vector[left_line_index_], true);
 
-					right_coeff_ = adjust(middle_coeff_, lanes_vector[right_line_index_]);
+					right_coeff_ = adjust(middle_coeff_, lanes_vector[right_line_index_], false);
 				}
 				else if(left_line_index_ != -1)
 				{
 					//"l/  c+  r-"
 					l_state = '/';	c_state = '+';	r_state = '-';
-					left_coeff_ = adjust(middle_coeff_, lanes_vector[left_line_index_]);
+					left_coeff_ = adjust(middle_coeff_, lanes_vector[left_line_index_], true);
 
 					if(!polyfit(poly_nDegree_, createOffsetLine(middle_coeff_, -1 * lane_width_), right_coeff_))
 						right_coeff_ = last_right_coeff_;;
@@ -1067,7 +1067,7 @@ void LaneDetector::linesApproximation(std::vector<std::vector<cv::Point2f> > lan
 				{
 					//"l-  c+  r/"
 					l_state = '-';	c_state = '+';	r_state = '/';
-					right_coeff_ = adjust(middle_coeff_, lanes_vector[right_line_index_]);
+					right_coeff_ = adjust(middle_coeff_, lanes_vector[right_line_index_], false);
 
 					if(!polyfit(poly_nDegree_, createOffsetLine(middle_coeff_, lane_width_), left_coeff_))
 						left_coeff_ = last_left_coeff_;
@@ -1260,10 +1260,12 @@ bool LaneDetector::polyfit(int nDegree, std::vector<cv::Point2f> line, std::vect
 	return true;
 }
 
-std::vector<float> LaneDetector::adjust(std::vector<float> good_poly_coeff, std::vector<cv::Point2f> line)
+std::vector<float> LaneDetector::adjust(std::vector<float> good_poly_coeff, std::vector<cv::Point2f> line, bool left_offset)
 {
     std::vector<float> coeff = good_poly_coeff;
-	float width = line[1].y - getAproxY(good_poly_coeff, line[1].x);
+	float width = std::abs(line[1].y - getAproxY(good_poly_coeff, line[1].x));
+	if(!left_offset)
+		width *= -1;
 	if(polyfit(poly_nDegree_, createOffsetLine(good_poly_coeff, width), coeff))
 		return coeff;
 	else
@@ -1432,7 +1434,7 @@ std::vector<cv::Point2f> LaneDetector::createOffsetLine(std::vector<float> coeff
 {
 	std::vector<cv::Point2f> new_line;
 	cv::Point2f p;
-	for(float i = TOPVIEW_MIN_X; i < TOPVIEW_MAX_X; i += 0.05)
+	for(float i = TOPVIEW_MIN_X - 0.1; i < TOPVIEW_MAX_X + 0.1; i += 0.05)
 	{
 		float deriative = 2 * coeff[2] * i + coeff[1];
 		float angle = atan(deriative);
