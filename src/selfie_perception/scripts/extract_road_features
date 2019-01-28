@@ -13,8 +13,8 @@ def road_markings_callback(msg):
     c_poly = Polynomial(msg.center_line)
     r_poly = Polynomial(msg.right_line)
 
-    c_poly_dist_sq = [0, 0, 1] + c_poly**2
-    r_poly_dist_sq = [0, 0, 1] + r_poly**2
+    c_poly_dist_sq = [np.power(lookahead, 2), -2*lookahead, 1] + c_poly**2
+    r_poly_dist_sq = [np.power(lookahead, 2), -2*lookahead, 1] + r_poly**2
 
     c_x = np.max(0, minimize(c_poly_dist_sq, 0).x[0])
     r_x = np.max(0, minimize(r_poly_dist_sq, 0).x[0])
@@ -46,6 +46,9 @@ if __name__ == '__main__':
                                           RoadMarkings,
                                           road_markings_callback,
                                           queue_size=1)
+
+    global lookahead
+    lookahead = rospy.param('~lookahead', 0.0)
 
     global heading_offset_pub, position_offset_pub
     heading_offset_pub = rospy.Publisher('heading_offset', Float64, queue_size=1)
