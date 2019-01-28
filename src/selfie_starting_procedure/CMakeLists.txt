@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(selfie_control)
+project(selfie_starting_procedure)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,13 +8,15 @@ project(selfie_control)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  genmsg actionlib_msgs
-  dynamic_reconfigure
-  ackermann_msgs
+  roscpp
   rospy
   std_msgs
+  sensor_msgs
+  image_transport
+  cv_bridge
 )
 
+find_package(OpenCV 3.3.1 REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -63,10 +65,17 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate actions in the 'action' folder
-add_action_files(DIRECTORY action FILES ChangeLane.action)
+# add_action_files(
+#   FILES
+#   Action1.action
+#   Action2.action
+# )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(DEPENDENCIES actionlib_msgs)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -83,10 +92,10 @@ generate_messages(DEPENDENCIES actionlib_msgs)
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-  cfg/Speed.cfg
-  cfg/HeadingCoeff.cfg
-)
+# generate_dynamic_reconfigure_options(
+#   cfg/DynReconf1.cfg
+#   cfg/DynReconf2.cfg
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -98,9 +107,9 @@ generate_dynamic_reconfigure_options(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES selfie_control
-#  CATKIN_DEPENDS ackermann_msgs rospy std_msgs
+    INCLUDE_DIRS include
+#  LIBRARIES selfie_starting_procedure
+#  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -111,13 +120,14 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/selfie_control.cpp
+#   src/${PROJECT_NAME}/selfie_starting_procedure.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -128,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/selfie_control_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/selfie_starting_procedure_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -172,7 +182,11 @@ include_directories(
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
 # )
-
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
 #   # myfile1
@@ -185,10 +199,13 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_selfie_control.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_selfie_starting_procedure.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+add_executable(starting_procedure src/main.cpp src/starting_procedure.cpp src/qr_decoder.cpp)
+target_link_libraries(starting_procedure ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${ZBAR_LIBRARIES}zbar)
+add_dependencies(starting_procedure ${catkin_EXPORTED_TARGETS})
