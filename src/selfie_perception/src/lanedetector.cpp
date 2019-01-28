@@ -4,7 +4,7 @@
 #define TOPVIEW_COLS 640
 
 #define TOPVIEW_MIN_X  0.3
-#define TOPVIEW_MAX_X  1.3
+#define TOPVIEW_MAX_X  1.6
 #define TOPVIEW_MIN_Y -0.9
 #define TOPVIEW_MAX_Y  0.9
 
@@ -21,7 +21,7 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	debug_mode_(false),
 	init_imageCallback_(true),
 
-	max_mid_line_gap_(0.4),
+	max_mid_line_gap_(0.8),
 	max_mid_line_distance_(0.12),
 
 	min_length_search_line_(0.10),
@@ -486,9 +486,9 @@ void LaneDetector::ROILaneRight(cv::Mat &input_frame, cv::Mat &output_frame)
 	output_frame = input_frame.clone();
 	float offset_center = -0.07;
 	float offset_right = 0.05;
-	if(right_line_index_ == -1)
+	if(right_line_index_ == -1 || cv::arcLength(lanes_vector_converted_[right_line_index_], false) < min_length_to_aprox_)
 		offset_right = 0.1;
-	if(center_line_index_ == -1)
+	if(center_line_index_ == -1 || cv::arcLength(lanes_vector_converted_[center_line_index_], false) < min_length_to_aprox_)
 		offset_center = -0.12;
 	int length;
 
@@ -525,9 +525,9 @@ void LaneDetector::ROILaneLeft(cv::Mat &input_frame, cv::Mat &output_frame)
 	output_frame = input_frame.clone();
 	float offset_center = 0.05;
 	float offset_left = -0.07;
-	if(left_line_index_ == -1)
+	if(left_line_index_ == -1 || cv::arcLength(lanes_vector_converted_[left_line_index_], false) < min_length_to_aprox_)
 		offset_left = -0.12;
-	if(center_line_index_ == -1)
+	if(center_line_index_ == -1 || cv::arcLength(lanes_vector_converted_[center_line_index_], false) < min_length_to_aprox_)
 		offset_center = 0.1;
 	int length;
 
@@ -1154,8 +1154,7 @@ void LaneDetector::addBottomPoint()
 	cv::Point2f temp;
 	if(left_line_index_ > -1)
 	{
-		if(lanes_vector_converted_[left_line_index_][0].x > ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 3) && 
-			cv::arcLength(lanes_vector_converted_[left_line_index_], false) > min_length_to_aprox_)
+		if(lanes_vector_converted_[left_line_index_][0].x > ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
 		{
 			temp.x = TOPVIEW_MIN_X;
 			temp.y = getAproxY(last_left_coeff_, TOPVIEW_MIN_X);
@@ -1165,8 +1164,7 @@ void LaneDetector::addBottomPoint()
 
 	if(right_line_index_ > -1)
 	{
-		if(lanes_vector_converted_[right_line_index_][0].x > ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 3) && 
-			cv::arcLength(lanes_vector_converted_[right_line_index_], false) > min_length_to_aprox_)
+		if(lanes_vector_converted_[right_line_index_][0].x > ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
 		{
 			temp.x = TOPVIEW_MIN_X;
 			temp.y = getAproxY(last_right_coeff_, TOPVIEW_MIN_X);
@@ -1176,8 +1174,7 @@ void LaneDetector::addBottomPoint()
 
 	if(center_line_index_ > -1)
 	{
-		if(lanes_vector_converted_[center_line_index_][0].x > ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 3) && 
-			cv::arcLength(lanes_vector_converted_[center_line_index_], false) > min_length_to_aprox_)
+		if(lanes_vector_converted_[center_line_index_][0].x > ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
 		{
 			temp.x = TOPVIEW_MIN_X;
 			temp.y = getAproxY(last_middle_coeff_, TOPVIEW_MIN_X);
@@ -1248,7 +1245,7 @@ std::vector<float> LaneDetector::adjust(std::vector<float> good_poly_coeff, std:
 	if(line[1].y - line[line.size() - 1].y != 0)
 	{
 		a = -1 * (line[1].x - line[line.size() - 1].x) / (line[1].y - line[line.size() - 1].y);
-		b = line[1].y - a * line[1].x;
+		b = line[line.size() / 2].y - a * line[line.size() / 2].x;
 		
 		float delta = ((good_poly_coeff[1] - a) * (good_poly_coeff[1] - a)) - 4 * (good_poly_coeff[2] * (good_poly_coeff[0] - b));
 		float x1 = (-1 * (good_poly_coeff[1] - a) - sqrtf(delta)) / (2 * good_poly_coeff[2]);
