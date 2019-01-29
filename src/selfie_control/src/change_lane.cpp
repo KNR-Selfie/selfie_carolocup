@@ -44,6 +44,7 @@ int main(int argc, char** argv)
 	server.registerGoalCallback(boost::bind(&execute, &server, &changelane));
 	server.start();
 
+  ros::Rate loop_rate(50);
 	bool maneuver_status = false;
 	while (ros::ok())
 	{
@@ -63,7 +64,8 @@ int main(int argc, char** argv)
 		}
 		//sending msgs to topics
 		send_msgs_to_publischers(target_publisher, left_turn_indicator_publisher, right_turn_indicator_publisher, changelane.target_position, changelane.left_turn_indicator, changelane.right_turn_indicator);
-		ros::spinOnce();
+    loop_rate.sleep();
+    ros::spinOnce();
 	}
 
 	return 0;
