@@ -451,13 +451,13 @@ void LaneDetector::dynamicMask(cv::Mat &input_frame, cv::Mat &output_frame)
 {
 	dynamic_mask_ = cv::Mat::zeros(cv::Size(input_frame.cols, input_frame.rows), CV_8UC1);
 	int length;
-	float offset_right = -0.1;
-	float offset_left = 0.08;
+	float offset_right = -0.08;
+	float offset_left = 0.06;
 	output_frame = input_frame.clone();
 	if(right_line_index_ == -1)
-		offset_right = -0.25;
+		offset_right = -0.1;
 	if(left_line_index_ == -1)
-		offset_left = 0.23;
+		offset_left = 0.08;
 
 	std::vector<cv::Point2f> left_line = createOffsetLine(left_coeff_, offset_left);
 	std::vector<cv::Point2f> right_line = createOffsetLine(right_coeff_, offset_right);
