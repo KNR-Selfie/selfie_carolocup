@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(selfie_control)
 
 find_package(catkin REQUIRED COMPONENTS
+  genmsg actionlib_msgs
   dynamic_reconfigure
   ackermann_msgs
   actionlib_msgs
@@ -23,7 +24,7 @@ add_action_files(
 
 generate_dynamic_reconfigure_options(
   cfg/Speed.cfg
-  cfg/AngularCoeff.cfg
+  cfg/HeadingCoeff.cfg
 )
 
 catkin_package(CATKIN_DEPENDS actionlib_msgs)

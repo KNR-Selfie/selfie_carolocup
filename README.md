@@ -22,15 +22,13 @@ cd selfie_carolocup2019
 Lastly, the following set of commands will in turn download all external dependencies, build the packages in `src` directory and include them in your environment.
 
 ```bash
-rosdep install --from-paths src --ignore-src -r -y
+./resolve-dependencies.sh
 catkin_make
 source ./devel/setup.bash
 ```
 
 ## Running
 
-First, make sure you have correct udev rules set for your camera, as described [here](http://wiki.ros.org/libuvc_camera#Permissions). Then execute the command:
-
 ```bash
-roslaunch selfie_launch drive.launch
+roslaunch selfie_launch free_drive.launch homography_file:={path}
 ```
