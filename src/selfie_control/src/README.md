@@ -1,13 +1,9 @@
-# Selfie @ Carolo-Cup 2019
-
-This repository contains the [catkin workspace](http://wiki.ros.org/catkin/workspaces) for Selfie Autonomous Car at [Carolo-Cup 2019](https://wiki.ifr.ing.tu-bs.de/carolocup/en/event-history/2019/dates) competition.
-
 ##Info:
 change lane node inside selfie_control package
 Parameters: ~lane_width (float), ~error_margin (float)
 
 ## Subscribed and published topics
-Subscribed topics: 
+Subscribed topics:
 position_offset (std_msgs/Float64)
 
 Published topics:
@@ -17,7 +13,7 @@ right_turn_indicator (std_msgs/Bool)
 
 ## Running
 
-#Demo of changing lane action
+### Demo of changing lane action
 
 1) Run demo offset publisher that will generate offset_position based of the target position from module
 rosrun selfie_control demo_position
@@ -27,6 +23,3 @@ rosrun selfie_control change_lane _lane_width:=1 _error_margin:=0.1
 
 3) Start action of changing when you want to do so. Give an argument that tells which lane do you want.
 rosrun selfie_control demo_change_lane _lane:=l (or _lane:=r)
-
-
-
