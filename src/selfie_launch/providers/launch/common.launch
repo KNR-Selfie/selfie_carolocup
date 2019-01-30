@@ -1,0 +1,25 @@
+<launch>
+  <arg name="homography_file" default="$(find selfie_camera)/config/homography_fisheye_01.yaml"/>
+  <arg name="lookahead" default="0.3" />
+
+  <group ns="camera">
+    <include file="$(find selfie_camera)/launch/basler.launch" />
+  </group>
+
+  <group ns="starting_procedure">
+    <remap from="image_raw" to="/camera/image_rect" />
+    <remap from="distance" to="/stm32/distance" />
+    <node name="starting_procedure" type="starting_procedure" pkg="selfie_starting_procedure" />
+  </group>
+
+  <group ns="vision">
+    <remap from="/image_rect" to="/camera/image_rect" />
+    <remap from="position_offset" to="/lane_control/position_offset" />
+    <remap from="heading_offset" to="/lane_control/heading_offset" />
+    <include file="$(find selfie_launch)/launch/subsystems/vision.launch" pass_all_args="true" />
+  </group>
+
+  <group ns="lane_control">
+    <include file="$(find selfie_launch)/launch/subsystems/lane_control.launch" />
+  </group>
+</launch>
