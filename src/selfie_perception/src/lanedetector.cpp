@@ -17,7 +17,7 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	nh_(nh),
 	pnh_(pnh),
 	it_(nh),
-	binary_treshold_(28),
+	binary_treshold_(29),
 	debug_mode_(false),
 	init_imageCallback_(true),
 
@@ -464,11 +464,11 @@ void LaneDetector::dynamicMask(cv::Mat &input_frame, cv::Mat &output_frame)
 	output_frame = input_frame.clone();
 	if(right_line_index_ == -1)
 		offset_right = -0.14;
-	else if(lanes_vector_converted_[right_line_index_][lanes_vector_converted_[right_line_index_].size()].x < ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
+	else if(lanes_vector_converted_[right_line_index_][lanes_vector_converted_[right_line_index_].size() - 1].x < ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
 		offset_right = -0.14;
 	if(left_line_index_ == -1)
 		offset_left = 0.12;
-	else if(lanes_vector_converted_[left_line_index_][lanes_vector_converted_[left_line_index_].size()].x < ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
+	else if(lanes_vector_converted_[left_line_index_][lanes_vector_converted_[left_line_index_].size() - 1].x < ((TOPVIEW_MIN_X + TOPVIEW_MAX_X) / 4))
 		offset_left = 0.12;
 
 	std::vector<cv::Point2f> left_line = createOffsetLine(left_coeff_, offset_left);
