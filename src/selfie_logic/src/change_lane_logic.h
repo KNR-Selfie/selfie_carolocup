@@ -14,9 +14,8 @@ struct line_s{
 };
 
 enum lane_status_e{
-    l_left,
-    l_right,
-    l_straight,
+    l_empty,
+    l_busy,
 };
 
 enum car_lane_e{
@@ -24,12 +23,21 @@ enum car_lane_e{
     c_right,
 };
 
+struct lane_status_s{
+    lane_status_e left;
+    lane_status_e right;
+};
+
 class ChangeLaneLogic{
 public:
     line_s line_coef;
-    lane_status_e lane_status;
     car_lane_e car_lane;
+    lane_status_s lane_status;
+    uint32_t left_points;
+    uint32_t right_points;
     float distance;
     float speed;
-    void check_lane_status(void);
+    void check_lane_status(geometry_msgs::Polygon polygon);
+    uint8_t check_point(float x, float y, float a0_l, float a1_l, float a2_l, float a0_r, float a1_r, float a2_r);
+
 };

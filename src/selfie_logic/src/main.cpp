@@ -14,17 +14,15 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   ros::Publisher speed_logic_publisher = n.advertise<std_msgs::Float32>("speed_logic", 100);
   
-  ros::Subscriber road_markings_subsciber = n.subscribe("road_markings",1, road_markings_callback);
+  ros::Subscriber road_markings_subsciber = n.subscribe("vision/road_markings",1, road_markings_callback);
   ros::Subscriber obstacles_subscriber = n.subscribe("obstacles", 1, obstacles_callback);
   ros::Subscriber distance_subscriver = n.subscribe("distance",1,distance_callback);
   ros::Subscriber ackerman_subscriber = n.subscribe("drive", 1, ackermanCallback);
  
-  
- 
 
   while (ros::ok())
   {
-    //cll.check_lane_status();
+    
     //static std_msgs::Float32 speed_logic_msg;
     //speed_logic_publisher.publish(speed_logic_msg);
     
@@ -49,17 +47,17 @@ void road_markings_callback(const selfie_msgs::RoadMarkings::ConstPtr& msg)
 //obstacles callback
 void obstacles_callback(const selfie_msgs::PolygonArray::ConstPtr& msg)
 {
-  
+  cll.right_points = 0;
+  cll.left_points = 0;
   for(int box_nr = msg->polygons.size()-1;  box_nr >= 0;  --box_nr)
   {
     //ROS_INFO("box_nr: %d",box_nr);
 
-    geometry_msgs::Polygon polygon = msg->polygons[box_nr];    
-    for (int i=0; i<4; ++i){
-      ROS_INFO("%f %f %f ",polygon.points[i].x,polygon.points[i].y);
-    }
-    ROS_INFO("\n");
+    geometry_msgs::Polygon polygon = msg->polygons[box_nr]; 
+    cll.check_lane_status(polygon);
+    
   }
+  ROS_INFO("Right: %d \t left: %d",cll.right_points, cll.left_points);
 }
 
 //distance callback
