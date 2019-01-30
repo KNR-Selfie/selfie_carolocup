@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find selfie_launch)/providers/launch/common.launch" />
+  <include file="$(find selfie)/providers/launch/common.launch" />
 
   <group ns="multiplexer">
     <node name="drive_mux" type="mux" pkg="topic_tools"

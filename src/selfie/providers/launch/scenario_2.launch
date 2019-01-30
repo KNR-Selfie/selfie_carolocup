@@ -2,7 +2,7 @@
   <remap from="/lane_control/left_turn_indicator" to="/stm32/left_turn_indicator" />
   <remap from="/lane_control/right_turn_indicator" to="/stm32/right_turn_indicator" />
 
-  <include file="$(find selfie_launch)/providers/launch/common.launch" />
+  <include file="$(find selfie)/providers/launch/common.launch" />
 
   <group ns="multiplexer">
     <node name="drive_mux" type="mux" pkg="topic_tools"

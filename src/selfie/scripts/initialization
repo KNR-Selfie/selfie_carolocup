@@ -19,8 +19,8 @@ def button_callback(btn, msg):
 
         rospy.loginfo('Initializing scenario #%i', btn)
 
-        client.use_capability('selfie_launch/DynamicEvent',
-                              'selfie_launch/scenario_{}'.format(btn))
+        client.use_capability('selfie/DynamicEvent',
+                              'selfie/scenario_{}'.format(btn))
 
 if __name__ == '__main__':
     rospy.init_node('initialization')
