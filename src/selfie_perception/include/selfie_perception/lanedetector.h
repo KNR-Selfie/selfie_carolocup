@@ -69,6 +69,9 @@ class LaneDetector
 	int left_line_index_;
 	int center_line_index_;
 	int right_line_index_;
+	bool short_left_line_;
+	bool short_center_line_;
+	bool short_right_line_;
 
 	void imageCallback(const sensor_msgs::ImageConstPtr &msg);
 	void computeTopView();
