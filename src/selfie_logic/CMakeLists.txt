@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   selfie_msgs
   roscpp
   geometry_msgs
+  ackermann_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -75,6 +76,7 @@ generate_messages(
   std_msgs
   sensor_msgs
   geometry_msgs
+  ackermann_msgs
 )
 
 ################################################
@@ -201,5 +203,5 @@ include_directories(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
-add_executable(selfie_logic src/main.cpp)
+add_executable(selfie_logic src/main.cpp src/change_lane_logic.cpp)
 target_link_libraries(selfie_logic ${catkin_LIBRARIES})

@@ -4,25 +4,29 @@ ChangeLaneLogic cll;
 
 void road_markings_callback(const selfie_msgs::RoadMarkings::ConstPtr& msg);
 void obstacles_callback(const selfie_msgs::PolygonArray::ConstPtr& msg);
+void distance_callback(const std_msgs::Float32::ConstPtr& msg);
+void ackermanCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg);
 
 int main(int argc, char **argv)
 {
 
   ros::init(argc, argv, "selfie_logic");
   ros::NodeHandle n;
-  //ros::Publisher imu_publisher = n.advertise<sensor_msgs::Imu>("imu", 100);
+  ros::Publisher speed_logic_publisher = n.advertise<std_msgs::Float32>("speed_logic", 100);
+  
   ros::Subscriber road_markings_subsciber = n.subscribe("road_markings",1, road_markings_callback);
   ros::Subscriber obstacles_subscriber = n.subscribe("obstacles", 1, obstacles_callback);
-  //ros::Subscriber ackerman_subscriber = n.subscribe("drive", 1, ackermanCallback);
+  ros::Subscriber distance_subscriver = n.subscribe("distance",1,distance_callback);
+  ros::Subscriber ackerman_subscriber = n.subscribe("drive", 1, ackermanCallback);
+ 
   
  
 
   while (ros::ok())
   {
-    
-    //static sensor_msgs::Imu imu_msg;
-
-    //imu_publisher.publish(imu_msg);
+    //cll.check_lane_status();
+    //static std_msgs::Float32 speed_logic_msg;
+    //speed_logic_publisher.publish(speed_logic_msg);
     
     ros::spinOnce();
   }
@@ -45,12 +49,24 @@ void road_markings_callback(const selfie_msgs::RoadMarkings::ConstPtr& msg)
 //obstacles callback
 void obstacles_callback(const selfie_msgs::PolygonArray::ConstPtr& msg)
 {
+  
   for(int box_nr = msg->polygons.size()-1;  box_nr >= 0;  --box_nr)
   {
-    ROS_INFO("box_nr: %d");
+    //ROS_INFO("box_nr: %d",box_nr);
 
     geometry_msgs::Polygon polygon = msg->polygons[box_nr];    
-
+    for (int i=0; i<4; ++i){
+      ROS_INFO("%f %f %f ",polygon.points[i].x,polygon.points[i].y);
+    }
+    ROS_INFO("\n");
   }
 }
 
+//distance callback
+void distance_callback(const std_msgs::Float32::ConstPtr& msg){
+  cll.distance = msg->data;
+}
+
+void ackermanCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg){
+  cll.speed = msg->drive.speed;
+}

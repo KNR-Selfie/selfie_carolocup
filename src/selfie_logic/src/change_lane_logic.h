@@ -4,6 +4,7 @@
 #include <selfie_msgs/RoadMarkings.h>
 #include <selfie_msgs/PolygonArray.h>
 #include <geometry_msgs/Point32.h>
+#include "ackermann_msgs/AckermannDriveStamped.h"
 #include <vector>
 
 struct line_s{
@@ -28,5 +29,7 @@ public:
     line_s line_coef;
     lane_status_e lane_status;
     car_lane_e car_lane;
-    void check_line_direction(void);
+    float distance;
+    float speed;
+    void check_lane_status(void);
 };
