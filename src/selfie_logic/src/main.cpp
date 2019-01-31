@@ -6,6 +6,7 @@ void road_markings_callback(const selfie_msgs::RoadMarkings::ConstPtr& msg);
 void obstacles_callback(const selfie_msgs::PolygonArray::ConstPtr& msg);
 void distance_callback(const std_msgs::Float32::ConstPtr& msg);
 void ackermanCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg);
+void positionCallback(const std_msgs::Float64::ConstPtr& msg);
 
 int main(int argc, char **argv)
 {
@@ -18,6 +19,7 @@ int main(int argc, char **argv)
   ros::Subscriber obstacles_subscriber = n.subscribe("obstacles", 1, obstacles_callback);
   ros::Subscriber distance_subscriver = n.subscribe("distance",1,distance_callback);
   ros::Subscriber ackerman_subscriber = n.subscribe("drive", 1, ackermanCallback);
+  ros::Subscriber position_subscriber = n.subscribe("position_offset", 1, positionCallback);
  
 
   while (ros::ok())
@@ -67,4 +69,12 @@ void distance_callback(const std_msgs::Float32::ConstPtr& msg){
 
 void ackermanCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg){
   cll.speed = msg->drive.speed;
+}
+
+void positionCallback(const std_msgs::Float64::ConstPtr& msg){
+  if (msg-> data>0)
+    cll.car_lane = c_right;
+  else{
+    cll.car_lane = c_left;
+  }
 }

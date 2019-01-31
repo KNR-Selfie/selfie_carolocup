@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "std_msgs/Float32.h"
+#include "std_msgs/Float64.h"
 #include "std_msgs/Bool.h"
 #include <selfie_msgs/RoadMarkings.h>
 #include <selfie_msgs/PolygonArray.h>
