@@ -16,7 +16,6 @@ class Starting_procedure
 
     ros::Subscriber sub_odom;
     ros::Subscriber sub_dist;
-    ros::Subscriber sub_button;
 
     ros::Publisher pub_drive;
     ros::Publisher pub_start;
@@ -28,9 +27,7 @@ public:
     Starting_procedure(const ros::NodeHandle& _pnh, const ros::NodeHandle& _nh);
     void odomCallback(const nav_msgs::Odometry::ConstPtr msg);
     void distCallback(const std_msgs::Float32::ConstPtr msg);
-    void buttonCallback(const std_msgs::Bool::ConstPtr msg);
 
-    bool button_clicked();
     void drive();
     void send_reset_flag();
 };
