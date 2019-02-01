@@ -1,14 +1,3 @@
 <launch>
   <include file="$(find selfie)/providers/launch/common.launch" />
-
-  <group ns="multiplexer">
-    <node name="drive_mux" type="mux" pkg="topic_tools"
-          args="/stm32/drive /starting_procedure/drive /lane_control/drive /parking/drive" />
-
-    <node name="left_turn_indicator_mux" type="mux" pkg="topic_tools"
-          args="/stm32/left_turn_indicator /lane_control/left_turn_indicator /parking/left_turn_indicator" />
-
-    <node name="right_turn_indicator_mux" type="mux" pkg="topic_tools"
-          args="/stm32/right_turn_indicator /lane_control/right_turn_indicator /parking/right_turn_indicator" />
-  </group>
 </launch>
