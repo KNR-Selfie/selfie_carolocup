@@ -18,22 +18,16 @@ def steering_angle_callback(msg):
 
     drive_pub.publish(cmd)
 
-def config_callback(config, level):
+def speed_callback(msg):
     global speed
-    speed = config['speed']
-
-    rospy.loginfo("Reconfigure request: speed=" + str(speed) + "m/s")
-
-    return config
+    speed = msg.data
 
 if __name__ == '__main__':
     rospy.init_node('selfie_angle_to_ackermann')
 
-    srv = Server(SpeedConfig, config_callback)
-
     global drive_pub
     drive_pub = rospy.Publisher('drive', AckermannDriveStamped, queue_size=1)
-
+    speed_sub = rospy.Subscriber('speed_control', Float64, speed_callback, queue_size=1)
     angle_sub = rospy.Subscriber('steering_angle', Float64, steering_angle_callback, queue_size=1)
 
     # Set update/publishing rate
