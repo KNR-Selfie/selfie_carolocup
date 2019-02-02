@@ -37,6 +37,7 @@
   <group ns="multiplexer">
     <remap from="mux" to="~" />
     <remap from="attempt_started" to="/starting_procedure/start" />
+    <remap from="reset_vision" to="/vision/resetVision" />
 
     <node name="drive_mux" type="mux" pkg="topic_tools"
           args="/stm32/drive
