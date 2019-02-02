@@ -44,7 +44,7 @@ if __name__ == '__main__':
                                           queue_size=1)
 
     global lookahead
-    lookahead = rospy.get_param('~lookahead', 1.0)
+    lookahead = rospy.get_param('~lookahead', 0.0)
 
     global heading_offset_pub, position_offset_pub, curvature_pub
     heading_offset_pub = rospy.Publisher('heading_offset', Float64, queue_size=1)
