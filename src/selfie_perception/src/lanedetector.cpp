@@ -88,7 +88,7 @@ bool LaneDetector::init()
 }
 
 void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
-{
+{	
 	try
 	{
 		current_frame_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC1)->image;
@@ -178,6 +178,12 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 		aproxVisualization();
 		pointsRVIZVisualization();
 	}
+}
+
+bool LaneDetector::resetVisionCallback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
+{
+    init_imageCallback_ = true;
+    return true;
 }
 
 void LaneDetector::computeTopView()
