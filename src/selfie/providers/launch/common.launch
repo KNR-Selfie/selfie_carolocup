@@ -1,9 +1,20 @@
 <launch>
-  <arg name="homography_file" default="$(find selfie_camera)/config/homography_fisheye_01.yaml"/>
+  <arg name="homography_file" default="/home/$(env USER)/.ros/homography_export.yaml" />
   <arg name="lookahead" default="0.3" />
 
   <group ns="camera">
     <include file="$(find selfie_camera)/launch/basler.launch" />
+  </group>
+
+  <group ns="tf">
+    <include file="$(find selfie)/launch/transforms.launch" />
+  </group>
+
+  <group ns="odometry">
+    <remap from="/distance" to="/stm32/distance" />
+    <remap from="/imu" to="/stm32/imu" />
+    <remap from="/odom" to="/odometry/odom" />
+    <node name="odometry" type="selfie_odometry" pkg="selfie_odometry" />
   </group>
 
   <group ns="starting_procedure">
