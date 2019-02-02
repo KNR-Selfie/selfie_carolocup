@@ -17,8 +17,7 @@ Starting_procedure::Starting_procedure(const ros::NodeHandle& _pnh, const ros::N
 
 void Starting_procedure::distCallback(const std_msgs::Float32::ConstPtr msg)
 {
-    if(start_flag)
-        driven_dist = msg->data;
+    driven_dist = msg->data;
 }
 
 void Starting_procedure::drive()

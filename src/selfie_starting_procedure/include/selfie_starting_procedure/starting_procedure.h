@@ -21,7 +21,6 @@ class Starting_procedure
     ros::Publisher pub_start;
 
     float driven_dist;
-    int start_flag;
 
 public:
     Starting_procedure(const ros::NodeHandle& _pnh, const ros::NodeHandle& _nh);
