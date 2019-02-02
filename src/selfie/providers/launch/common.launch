@@ -20,7 +20,9 @@
   <group ns="starting_procedure">
     <remap from="image_raw" to="/camera/image_rect" />
     <remap from="distance" to="/stm32/distance" />
-    <node name="starting_procedure" type="starting_procedure" pkg="selfie_starting_procedure" />
+    <node name="starting_procedure" type="starting_procedure" pkg="selfie_starting_procedure">
+      <param name="distance" value="1.0" />
+    </node>
   </group>
 
   <group ns="vision">
