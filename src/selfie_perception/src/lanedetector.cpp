@@ -43,6 +43,8 @@ LaneDetector::LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh
 	short_right_line_(false)
 {
 	lanes_pub_ =  nh_.advertise<selfie_msgs::RoadMarkings>("road_markings", 100);
+	intersection_pub_ =  nh_.advertise<std_msgs::Float32>("intersection", 100);
+	starting_line_pub_ =  nh_.advertise<std_msgs::Float32>("starting_line", 100);
 }
 
 LaneDetector::~LaneDetector()
@@ -102,7 +104,6 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 	//removeCar(homography_frame_);
 	cv::threshold(homography_frame_, binary_frame_, binary_treshold_, 255, cv::THRESH_BINARY);
 	
-
 	if(!init_imageCallback_)
 	{
 		dynamicMask(binary_frame_, masked_frame_);
@@ -112,6 +113,7 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 		//remove ROI inside left and right lane
 		ROILaneRight(masked_frame_, masked_frame_);
 		ROILaneLeft(masked_frame_, masked_frame_);
+		detectStartAndIntersectionLine();
 	}
 	else
 		masked_frame_ = binary_frame_.clone();
@@ -160,7 +162,6 @@ void LaneDetector::imageCallback(const sensor_msgs::ImageConstPtr &msg)
 			calcRoadWidth();
 			addBottomPoint();
 			linesApproximation(lanes_vector_converted_);
-			
 		}
 	}
 
@@ -1477,4 +1478,131 @@ std::vector<cv::Point2f> LaneDetector::createOffsetLine(std::vector<float> coeff
 		new_line.push_back(p);
 	}
 	return new_line;
+}
+
+void LaneDetector::detectStartAndIntersectionLine()
+{
+	float detect_slope = 2.2;
+	float detect_lenght = 0.2;
+	// morphology variables
+	int morph_size = 7;
+	int morph_elem = 0;
+
+	// vectors
+	std::vector<std::vector<cv::Point> > left_lines;
+	std::vector<std::vector<cv::Point> > right_lines;
+	std::vector<std::vector<cv::Point2f> > left_lines_converted;
+	std::vector<std::vector<cv::Point2f> > right_lines_converted;
+
+	float right_distance = -1000;
+	float left_distance = -1000;
+
+	int operation = 3;
+	cv::Mat element = getStructuringElement( morph_elem, cv::Size( 2*morph_size + 1, 2*morph_size+1 ), cv::Point( morph_size, morph_size ) );
+	cv::morphologyEx(left_lane_frame_, left_lane_frame_, operation, element );
+	cv::morphologyEx(right_lane_frame_, right_lane_frame_, operation, element );
+	cv::medianBlur(left_lane_frame_, left_lane_frame_, 5);
+	cv::medianBlur(right_lane_frame_, right_lane_frame_, 5);
+
+	detectLines(left_lane_frame_, left_lines);
+	detectLines(right_lane_frame_, right_lines);
+
+	//check right lane
+	for (int i = 0; i < right_lines.size(); i++)
+	{
+		cv::RotatedRect rect = cv::minAreaRect(right_lines[i]);
+
+		cv::Point2f vertices2f[4];
+		rect.points(vertices2f);
+
+		std::vector<cv::Point2f> rect_vector;
+		rect_vector.push_back(vertices2f[0]);
+		rect_vector.push_back(vertices2f[1]);
+		rect_vector.push_back(vertices2f[2]);
+		rect_vector.push_back(vertices2f[3]);
+		cv::transform(rect_vector, rect_vector, topview2world_.rowRange(0, 2));
+
+		float d1, d2;
+		d1 = getDistance(rect_vector[0], rect_vector[1]);
+		d2 = getDistance(rect_vector[1], rect_vector[2]);
+		if (d1 < detect_lenght && d2 < detect_lenght)
+			continue;
+		float a = 0;
+		if (d1 > d2)
+		{
+			if (rect_vector[0].x - rect_vector[1].x != 0)
+				a = (rect_vector[0].y - rect_vector[1].y) / (rect_vector[0].x - rect_vector[1].x);
+			else
+				a = 100;
+		}
+		else
+		{
+			if (rect_vector[1].x - rect_vector[2].x != 0)
+				a = (rect_vector[1].y - rect_vector[2].y) / (rect_vector[1].x - rect_vector[2].x);
+			else
+				a = 100;
+		}
+
+		if (std::abs(a) > detect_slope)
+		{
+			right_distance = (rect_vector[0].x + rect_vector[1].x + rect_vector[2].x + rect_vector[3].x) / 4;
+			break;
+		}
+	}
+
+	//check left lane
+	for (int i = 0; i < left_lines.size(); i++)
+	{
+		cv::RotatedRect rect = cv::minAreaRect(left_lines[i]);
+
+		cv::Point2f vertices2f[4];
+		rect.points(vertices2f);
+
+		std::vector<cv::Point2f> rect_vector;
+		rect_vector.push_back(vertices2f[0]);
+		rect_vector.push_back(vertices2f[1]);
+		rect_vector.push_back(vertices2f[2]);
+		rect_vector.push_back(vertices2f[3]);
+		cv::transform(rect_vector, rect_vector, topview2world_.rowRange(0, 2));
+
+		float d1, d2;
+		d1 = getDistance(rect_vector[0], rect_vector[1]);
+		d2 = getDistance(rect_vector[1], rect_vector[2]);
+		if (d1 < detect_lenght && d2 < detect_lenght)
+			continue;
+		float a = 0;
+		if (d1 > d2)
+		{
+			if (rect_vector[0].x - rect_vector[1].x != 0)
+				a = (rect_vector[0].y - rect_vector[1].y) / (rect_vector[0].x - rect_vector[1].x);
+			else
+				a = 100;
+		}
+		else
+		{
+			if (rect_vector[1].x - rect_vector[2].x != 0)
+				a = (rect_vector[1].y - rect_vector[2].y) / (rect_vector[1].x - rect_vector[2].x);
+			else
+				a = 100;
+		}
+
+		if (std::abs(a) > detect_slope)
+		{
+			left_distance = (rect_vector[0].x + rect_vector[1].x + rect_vector[2].x + rect_vector[3].x) / 4;
+			break;
+		}
+	}
+
+	if(std::abs(right_distance - left_distance) < 0.09 && left_distance > 0)
+	{
+		std_msgs::Float32 msg;
+		msg.data = right_distance;
+		starting_line_pub_.publish(msg);
+	}
+	else if(right_distance > 0)
+	{
+		std_msgs::Float32 msg;
+		msg.data = right_distance;
+		intersection_pub_.publish(msg);
+	}
 }
