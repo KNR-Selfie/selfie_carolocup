@@ -72,6 +72,9 @@ find_package(catkin REQUIRED COMPONENTS
 #   Action2.action
 # )
 
+## Generate actions in the 'action' folder
+add_action_files(DIRECTORY /../selfie_control/action FILES ChangeLane.action)
+
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
@@ -79,6 +82,7 @@ generate_messages(
   sensor_msgs
   geometry_msgs
   ackermann_msgs
+  actionlib_msgs
 )
 
 ################################################

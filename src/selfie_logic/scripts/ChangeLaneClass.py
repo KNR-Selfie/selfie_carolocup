@@ -1,6 +1,7 @@
 import rospy
 from geometry_msgs.msg import Polygon, PolygonStamped
-
+import actionlib
+import selfie_control.msg
 import numpy as np
 from math import sqrt, atan, atan2
 from scipy.optimize import minimize
@@ -19,31 +20,33 @@ class ChangeLaneClass:
         self.r_poly = Polynomial(0)
         self.l_poly = Polynomial(0)
 
-        self.lookahead_c = 0.2
-        self.lookahead_f = 0.3
-        self.lookahead_max = 0.8
-        #width of road
-        self.width = 0.45
+        self.lookahead_c = 0.2 
 
         #obstacles polygon
         self.polygons = []
 
-        #points on current lane
-        self.points_on_lane = 0
-        self.front_points_counter = 0
-
-        self.start_maneuver = 0
+        #points on right lane
+        self.points_front = 0
+        self.points_right = 0
+        
         self.start_distance = 0
-        self.lane_distance = 0
-        self.obstacle_on_right = 0
-        self.changed_lane = 0
-        self.no_obstacles = 0
-        self.got_stop_distance = 0
+        self.change_distance = 0
 
+        #distance from center lane
         self.center_dis = 0
         
-        self.trybe = 0
         self.get_call = 0
+        self.once_detected =0
+
+        self.get_change_distance = 0
+        self.get_start_distance =0
+
+    def create_client(self):
+        self.client = actionlib.SimpleActionClient('change_lane', selfie_control.msg.ChangeLaneAction)
+        rospy.loginfo("Wait for connecting to server")
+        self.client.wait_for_server()
+        rospy.loginfo("Connected with server 'change_lane'")
+        
 
     def get_offset(self, lookahead, poly):
         '''
@@ -69,63 +72,34 @@ class ChangeLaneClass:
         return c_dist
         
 
-    def check_polygon_two_lines_middle_four_points(self, polygon):
+    def check_polygon(self, polygon):
         '''
         Method that checks if middle points of polygon are inside current lane
         '''
-        points_tmp = 0
-        #we are on right so we check right lane
-        if self.right_lane == 1:
-            x_middle =0
-            y_middle = 0
-            for i in range(0,4):
-                #get x_coor with shift
-                x_coor = polygon.points[i].x + 0.2
-                #get y_coor with minus sign
-                y_coor = -polygon.points[i].y
-
-                x_middle +=x_coor
-                y_middle +=y_coor
-
-            x_middle /=4
-            y_middle /=4
-
-            x_min = min(polygon.points[0].x + 0.2,polygon.points[1].x + 0.2,polygon.points[2].x + 0.2,polygon.points[3].x + 0.2)
-            y_min = min(-polygon.points[0].y,-polygon.points[1].y,-polygon.points[2].y,-polygon.points[3].y)
-            y_max = max(-polygon.points[0].y,-polygon.points[1].y,-polygon.points[2].y,-polygon.points[3].y)
-            y_wid = (y_max-y_min)/2
-
-            #get y_coor on right and center line with margin
-            c_dis_m = self.get_offset(x_middle, self.c_poly)
-            r_dis_m = self.get_offset(x_middle, self.r_poly)
-                            
-            if c_dis_m<y_middle and y_middle<r_dis_m and x_min>0.3 and x_min<0.7:
-                points_tmp +=1   
-            #rospy.loginfo("C: %f Y: %f R: %f X:%f", c_dis_m, y_middle, r_dis_m,x_min)                 
-        
-        #return box only if more points are inside
-        if points_tmp >0:
-            self.points_on_lane += points_tmp
-
-    def check_polygon_maneuver(self, polygon):
-        obstacle_on_right = 0
+        tmp_front = 0
+        tmp_right = 0        
         for i in range(0,4):
-            #get x_coor with shift
-            x_coor = polygon.points[i].x + 0.2
-            #get y_coor with minus sign
-            y_coor = -polygon.points[i].y
+            x_coor = polygon.points[i].x
+            y_coor = polygon.points[i].y
+                
+            #get y_coor on right and center line with margin
+            c_dis = self.get_offset(x_coor, self.c_poly)
+            r_dis = self.get_offset(x_coor, self.r_poly)
+                
+            if c_dis < y_coor and y_coor<r_dis:
+                tmp_front +=1   
 
-            if y_coor<0 and y_coor>-0.5 and x_coor <0.5 and x_coor > 0.1:
-                obstacle_on_right +=1
+            if y_coor>0 and y_coor<r_dis and x_coor > 0.0:
+                tmp_right += 1
 
-        if obstacle_on_right >0:
-            self.points_on_lane += obstacle_on_right
+        if tmp_front>3:
+            self.points_front +=1
 
-
+        if tmp_right>3:
+            self.points_right  +=1  
+            
         
-    
-
-    def check_front(self):
+    def check_polygons(self):
         #checking if we have obstacle in front
         self.center_dis = self.get_offset(self.lookahead_c,self.c_poly)
         if self.center_dis<0:
@@ -137,98 +111,54 @@ class ChangeLaneClass:
         #check each polygon
         if (len(self.polygons)==0):
             return 0
-        self.points_on_lane =0
+
+        self.points_front = 0
+        self.points_right = 0
+
         for box_nr in range (len(self.polygons)-1, 0, -1):   
-            self.check_polygon_two_lines_middle_four_points(self.polygons[box_nr])
-  
-        if self.points_on_lane>0:
-            self.front_points_counter +=1
-            if self.front_points_counter > 5:
-                self.front_points_counter = 5
-        else:
-            self.front_points_counter -=1
-        
-            if self.front_points_counter<0:
-                self.front_points_counter= 0
-
-        if self.front_points_counter>2:
-            self.start_maneuver = 1
-            self.start_distance = self.distance
-            self.front_points_counter = 0
-            self.changed_lane = 0
-
-        return self.start_maneuver
-    
-    def check_end_maneuver(self):
-        self.center_dis = self.get_offset(self.lookahead_c,self.c_poly)
-        if self.center_dis>0.1:
-            self.front_points_counter = 5
-            self.start_maneuver= 0
-            return 1
-        else:
-            return 0
-
-    def check_end_maneuver_back(self):
-        self.center_dis = self.get_offset(self.lookahead_c,self.c_poly)
-        if self.center_dis<-0.1:
-            self.front_points_counter = 0
-            self.start_maneuver= 0
-            return 1
-        else:
-            return 0
-
-    def check_right_lane(self):
-        
-        if (len(self.polygons)==0):
-            return 0
-        self.points_on_lane = 0
-        for box_nr in range (len(self.polygons)-1, 0, -1):   
-            self.check_polygon_maneuver(self.polygons[box_nr])
-        
-        if self.points_on_lane>0:
-            self.front_points_counter +=1
-            if self.front_points_counter > 5:
-                self.front_points_counter = 5
-        else:
-            self.front_points_counter -=1
-            if self.front_points_counter<0:
-                self.front_points_counter= 0
-
-        if self.front_points_counter==0:
-            self.start_maneuver = 1
-            self.lane_distance = self.distance - self.start_distance
-            self.changed_lane = 0
-
-        return self.start_maneuver
-  
+            self.check_polygon(self.polygons[box_nr])
 
     def change_lane_procedure(self):
-        self.center_dis = self.get_offset(self.lookahead_c,self.c_poly) 
-        if self.center_dis<0:
-            self.right_lane = 1
-        else:
-            self.right_lane = 0
+        #main methode to change lane
 
+        self.check_polygons()
 
-        #normal drive
-        if self.trybe ==0:
-            start_maneuver = self.check_front()
-            if start_maneuver ==1:
-                self.trybe = 1
-        #going left
-        elif self.trybe ==1:
-            end_maneuver = self.check_end_maneuver()
-            if end_maneuver ==1:
-                self.trybe =2
-        #wait for no obstacles
-        elif self.trybe ==2:
-            start_maneuver = self.check_right_lane()
-            if start_maneuver ==1:
-                self.trybe = 3
-        elif self.trybe ==3:
-            end_maneuver = self.check_end_maneuver_back()
-            if end_maneuver ==1:
-                self.trybe =0
+        #if we are on right lane and want to change it
+        if self.right_lane==1 and self.points_front >0:
+            if self.once_detected <2:
+                self.once_detected += 1
+            elif (self.get_start_distance==0):
+                self.once_detected= 0 
+                self.get_start_distance=1
+                self.start_distance = self.distance
+                goal = selfie_control.msg.ChangeLaneGoal(left_lane=True)
+                self.client.send_goal(goal)
+                self.client.wait_for_result()
+                #result = self.client.get_result()
+
+        elif self.right_lane==1 and self.points_front ==0:
+            self.once_detected =0
+
+        #if we are on left lane
+        elif self.right_lane==0 and self.points_right==0:
+            
+            if self.once_detected <2:
+                self.once_detected += 1
+            if (self.get_change_distance ==0):
+                self.change_distance = self.distance - self.start_distance
+                self.start_distance = self.distance
+                self.get_change_distance = 1
+            else:
+                #if self.distance-self.start_distance>self.change_distance:
+                    self.once_detected= 0 
+                    self.get_change_distance = 0
+                    self.get_start_distance =0
+                    goal = selfie_control.msg.ChangeLaneGoal(left_lane=False)
+                    self.client.send_goal(goal)
+                    self.client.wait_for_result()
+                
+    
+    
 
 
         
