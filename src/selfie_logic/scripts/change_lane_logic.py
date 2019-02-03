@@ -14,6 +14,7 @@ from geometry_msgs.msg import Polygon, PolygonStamped
 
 CLC= ChangeLaneClass()
 
+
 def road_markings_callback(msg):
   #save parameters for each line
   CLC.c_poly = Polynomial(msg.center_line)
@@ -26,7 +27,8 @@ def distance_callback(msg):
   #showing variables on screen
   #rospy.loginfo("Points: %d \t Lane: %d", CLC.points_on_lane, CLC.right_lane)
 
-def obstacles_callback(msg):
+def obstacles_callback_old(msg):
+  '''
   CLC.points_on_lane = 0
   #if we are on right lane and want to detect obstacle
   if CLC.start_maneuver == 0:
@@ -50,26 +52,52 @@ def obstacles_callback(msg):
       CLC.counter = 0
       CLC.changed = 0
 
+  #when we are on left lane as part of maneuver
   elif CLC.start_maneuver ==1:
+    #clear variable
     CLC.obstacle_on_right = 0
+
+    #check polygons
     for box_nr in range (len(msg.polygons)-1, 0, -1):    
       CLC.polygon.polygon = msg.polygons[box_nr]
-      #check each polygon
       CLC.check_polygon_maneuver()
-    if CLC.obstacle_on_right > 0:
+
+    #if we are on right lane and there are obstacles on right
+    if CLC.right_lane == 0 and CLC.obstacle_on_right > 0:
       CLC.counter +=1
       if CLC.counter > 5:
         CLC.counter = 5
-    else:
+    elif CLC.right_lane == 0 and CLC.obstacle_on_right ==0 and CLC.changed ==0:
       CLC.counter -=1
       if CLC.counter<0:
         CLC.counter = 0
+    elif CLC.right_lane ==0 and CLC.obstacle_on_right ==0 and CLC.changed ==1:
+      CLC.no_obstacles +=1
+    elif CLC.right_lane ==0 and CLC.obstacle_on_right > 0 and CLC.changed ==1:
+      CLC.no_obstacles -=3
+      if CLC.no_obstacles < 0:
+        CLC.no_obstacles = 0
+
+    #if we have more than three decide we have changed lane
     if CLC.counter>3:
       CLC.changed = 1
+
+    if CLC.no_obstacles > 4 and CLC.got_stop_distance = 0:
+      CLC.lane_distance = CLC.distance - CLC.start_distance
+      CLC.got_stop_distance = 1
+    elif CLC.no_obstacles ==0:
+      CLC.got_stop_distance = 0
+     
+
     if CLC.changed == 1 and CLC.right_lane ==1:
-      CLC.start_maneuver = 0
+      CLC.start_maneuver = 0'''
     
-    
+def obstacles_callback(msg):
+  if (CLC.get_call ==0):
+    CLC.polygons[:] = []
+    CLC.get_call = 1
+    for box_nr in range (len(msg.polygons)-1, 0, -1):    
+        CLC.polygons.append(msg.polygons[box_nr])
 
     
 if __name__ == '__main__':
@@ -83,11 +111,23 @@ if __name__ == '__main__':
 
     
     while not rospy.is_shutdown():
-      if CLC.right_lane ==1:
-        rospy.loginfo("R. %d %d ", CLC.start_maneuver, CLC.obstacle_on_right)
-      else CLS.right_lane ==0:
-        rospy.loginfo("L. %d %d ", CLC.start_maneuver, CLC.obstacle_on_right)
+      '''if CLC.right_lane ==1:
+        rospy.loginfo("R. Man: %d Obs: %d ", CLC.start_maneuver, CLC.obstacle_on_right)
+      elif CLC.right_lane ==0:
+        rospy.loginfo("L. Man: %d Obs: %d ", CLC.start_maneuver, CLC.obstacle_on_right)
+      '''
+      
+    
+      #rospy.loginfo("%d", len(CLC.polygons))
 
+      if CLC.get_call == 0:
+        CLC.polygons[:] = []
+      
+        
+
+      CLC.change_lane_procedure()
+      CLC.get_call = 0
+      rospy.loginfo("T: %d. La: %d",CLC.trybe, CLC.right_lane)
 
       rospy.sleep(0.1)
       #rospy.spin()
