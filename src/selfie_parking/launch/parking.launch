@@ -1,7 +1,7 @@
 <launch>
 <!--
   <node pkg="selfie_parking" type="parking_drive.py" name="parking_drive"/>
- --> 
+ -->
 
  <!--
          pnh_.param<std::string>("ackermann_topic", ackermann_topic,"/sim_drive");
@@ -26,6 +26,8 @@
 -->
   <include file="$(find selfie)/launch/transforms.launch" />
 
+  <node name="park_server" type="park_server" pkg="selfie_park" />
+
   <node pkg="selfie_parking" type="parking_node" name="search_server" output="screen">
     <param name="/point_min_x" value="-0.5"/>
     <param name="/point_max_x" value="2"/>
@@ -37,7 +39,7 @@
     <param name="/scans_to_ignore_when_stopped" value="3"/>
     <param name="/scans_taken" value="2"/>
   </node>
- 
+
 
   <node pkg="selfie_odometry" type="selfie_odometry" name="odometry"/>
 
@@ -52,7 +54,7 @@
     <param name="line_search_slope_difference_ratio_" value="0.10"/>
     <param name="line_search_min_length_" value="0.05"/>
     <param name="line_min_length_" value="0.05"/>
-    <param name="obstacle_nominal_length_" value="0.4"/>   
+    <param name="obstacle_nominal_length_" value="0.4"/>
   </node>
 
 </launch>
