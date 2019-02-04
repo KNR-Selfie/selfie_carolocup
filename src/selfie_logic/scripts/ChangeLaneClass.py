@@ -92,10 +92,10 @@ class ChangeLaneClass:
             if y_coor>0 and y_coor<r_dis and x_coor > 0.0:
                 tmp_right += 1
 
-        if tmp_front>3:
+        if tmp_front>2:
             self.points_front +=1
 
-        if tmp_right>3:
+        if tmp_right>2:
             self.points_right  +=1  
             
         
