@@ -1,30 +1,28 @@
-# STM32 Bridge
+# Selfie logic
 
-`selfie_stm32_bridge` package provides a node with the same name responsible for communication with on-board STM32 microcontroller that handles IMU, encoders and vehicle control. The node communicates with ROS using standarized message types, as described below.
+`selfie_logic` package provides a node that takes care of changing lane procedure
 
-## `selfie_stm32_bridge`
+## `change_lane_logic`
 
 ### Subscribed topics
 
-`drive` ([ackermann_msgs/AckermannDriveStamped](http://docs.ros.org/api/ackermann_msgs/html/msg/AckermannDriveStamped.html))
-Steering commands to be applied.
+`vision/road_markings` (selfie_msgs/msgs/oadMarkings.msg)
+Road markings from selfie_detection
 
-`left_turn_indicator` ([std_msgs/Bool](http://docs.ros.org/api/std_msgs/html/msg/Bool.html))
-Status of left turn indicator.
+`obstacles` (selfie_msgs/msgs/PolygonArray.msg)
+Polygon Array contains vertexes of every rectangular obstacle in local XY
 
-`right_turn_indicator` ([std_msgs/Bool](http://docs.ros.org/api/std_msgs/html/msg/Bool.html))
-Status of right turn indicator.
+`distance` ([std_msgs/Float32](http://docs.ros.org/api/std_msgs/html/msg/Float32.html))
+Distance from encoder from STM32 bridge
 
 ### Published topics
 
-`imu` ([sensor_msgs/Imu](http://docs.ros.org/melodic/api/sensor_msgs/html/msg/Imu.html))
-Data stream from IMU.
+`change_lane_status` ([std_msgs/UInt16](http://docs.ros.org/melodic/api/std_msgs/html/msg/Float32.html))
+Status of changing lane:
+0 - on right and nothing on right lane
+1 - changing lane finished
+2 - on left lane and obstacle on right
+3 - waiting for distance to pass
+4 - change lane back finished
 
-`speed` ([std_msgs/Float32](http://docs.ros.org/api/std_msgs/html/msg/Float32.html))
-Linear velocity magnitude at the center of rear axle, as calculated from encoder data (in m/s).
 
-`start_button1` ([std_msgs/Bool](http://docs.ros.org/api/std_msgs/html/msg/Bool.html))
-Status of the start button1 (0 - no start, 1 - start).
-
-`start_button2` ([std_msgs/Bool](http://docs.ros.org/api/std_msgs/html/msg/Bool.html))
-Status of the start button2 (0 - no start, 1 - start).

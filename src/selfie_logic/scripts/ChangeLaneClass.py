@@ -41,6 +41,13 @@ class ChangeLaneClass:
         self.get_change_distance = 0
         self.get_start_distance =0
 
+        self.border_distance_x = 0.8
+        self.border_distance_y = 0.7
+
+        self.fraction = 1.0
+
+        self.change_lane_status = 0
+
     def create_client(self):
         self.client = actionlib.SimpleActionClient('change_lane', selfie_control.msg.ChangeLaneAction)
         rospy.loginfo("Wait for connecting to server")
@@ -76,7 +83,6 @@ class ChangeLaneClass:
         '''
         Method that checks if middle points of polygon are inside current lane
         '''
-        tmp_front = 0
         tmp_right = 0        
         for i in range(0,4):
             x_coor = polygon.points[i].x
@@ -86,17 +92,22 @@ class ChangeLaneClass:
             c_dis = self.get_offset(x_coor, self.c_poly)
             r_dis = self.get_offset(x_coor, self.r_poly)
                 
-            if c_dis < y_coor and y_coor<r_dis:
-                tmp_front +=1   
-
-            if y_coor>0 and y_coor<r_dis and x_coor > 0.0:
-                tmp_right += 1
-
-        if tmp_front>2:
-            self.points_front +=1
+            if y_coor<r_dis and c_dis < y_coor:
+                tmp_right +=1           
 
         if tmp_right>2:
-            self.points_right  +=1  
+            self.points_right +=1
+
+
+
+    def check_polygon_border(self, polygon):
+        for i in range(0,4):
+            x_coor = polygon.points[i].x
+            y_coor = polygon.points[i].y
+            if x_coor<self.border_distance_x and abs(y_coor)<self.border_distance_y:
+                return 1
+
+        return 0
             
         
     def check_polygons(self):
@@ -112,19 +123,25 @@ class ChangeLaneClass:
         if (len(self.polygons)==0):
             return 0
 
-        self.points_front = 0
         self.points_right = 0
 
         for box_nr in range (len(self.polygons)-1, 0, -1):   
-            self.check_polygon(self.polygons[box_nr])
+            polygon_in_border = self.check_polygon_border(self.polygons[box_nr])
+            if polygon_in_border==1:
+                self.check_polygon(self.polygons[box_nr])
+                #rospy.loginfo("Used")
+            #else:
+            #    rospy.loginfo("Rejected")
 
     def change_lane_procedure(self):
         #main methode to change lane
 
         self.check_polygons()
+        #rospy.loginfo("Lane: %d Pts: %d", self.right_lane, self.points_right)
 
         #if we are on right lane and want to change it
-        if self.right_lane==1 and self.points_front >0:
+        if self.right_lane==1 and self.points_right >0:
+            
             if self.once_detected <2:
                 self.once_detected += 1
             elif (self.get_start_distance==0):
@@ -134,28 +151,40 @@ class ChangeLaneClass:
                 goal = selfie_control.msg.ChangeLaneGoal(left_lane=True)
                 self.client.send_goal(goal)
                 self.client.wait_for_result()
+                self.change_lane_status = 1
+                self.once_detected = 0
                 #result = self.client.get_result()
 
-        elif self.right_lane==1 and self.points_front ==0:
+        elif self.right_lane==1 and self.points_right ==0:
             self.once_detected =0
+            self.change_lane_status = 0
 
         #if we are on left lane
         elif self.right_lane==0 and self.points_right==0:
             
             if self.once_detected <2:
                 self.once_detected += 1
-            if (self.get_change_distance ==0):
+            elif self.get_change_distance ==0:
                 self.change_distance = self.distance - self.start_distance
                 self.start_distance = self.distance
                 self.get_change_distance = 1
-            else:
-                #if self.distance-self.start_distance>self.change_distance:
+            elif self.get_change_distance ==1:
+                if self.distance-self.start_distance>self.change_distance*self.fraction:
                     self.once_detected= 0 
                     self.get_change_distance = 0
                     self.get_start_distance =0
                     goal = selfie_control.msg.ChangeLaneGoal(left_lane=False)
                     self.client.send_goal(goal)
                     self.client.wait_for_result()
+                    self.change_lane_status = 4
+                    self.once_detected = 0
+                else:
+                    self.change_lane_status = 3
+
+        elif self.right_lane==0 and self.points_right >0:
+            self.change_lane_status = 2
+            self.once_detected = 0
+            self.get_change_distance = 0
                 
     
     
