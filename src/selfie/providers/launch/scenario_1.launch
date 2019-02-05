@@ -1,5 +1,7 @@
 <launch>
-  <include file="$(find selfie)/providers/launch/common.launch" />
+  <include file="$(find selfie)/providers/launch/common.launch">
+    <arg name="num_parking_maneuvers" value="2" />
+  </include>
 
   <group ns="parking">
     <remap from="/odom" to="/odometry/odom" />

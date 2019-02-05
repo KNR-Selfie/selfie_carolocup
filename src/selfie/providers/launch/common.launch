@@ -1,6 +1,7 @@
 <launch>
   <arg name="homography_file" default="/home/$(env USER)/.ros/homography_export.yaml" />
   <arg name="lookahead" default="0.3" />
+  <arg name="num_parking_maneuvers" default="0" />
 
   <group ns="camera">
     <include file="$(find selfie_camera)/launch/basler.launch" />
@@ -55,7 +56,11 @@
     <remap from="position_offset" to="/lane_control/position_offset" />
     <remap from="heading_offset" to="/lane_control/heading_offset" />
     <remap from="reset_vision_request" to="/stm32/reset_vision" />
-    <include file="$(find selfie)/launch/subsystems/vision.launch" pass_all_args="true" />
+
+    <include file="$(find selfie)/launch/subsystems/vision.launch">
+      <arg name="homography_file" value="$(arg homography_file)" />
+      <arg name="lookahead" value="$(arg lookahead)" />
+    </include>
 
     <node name="reset_vision" type="reset_vision" pkg="selfie">
       <remap from="reset_vision" to="resetVision" />
@@ -70,6 +75,9 @@
     <remap from="mux" to="~" />
     <remap from="attempt_started" to="/starting_procedure/start" />
     <remap from="reset_vision" to="/vision/resetVision" />
+    <remap from="starting_line" to="/vision/starting_line" />
+    <remap from="search" to="/parking/search" />
+    <remap from="park" to="/parking/park" />
 
     <node name="drive_mux" type="mux" pkg="topic_tools"
           args="/stm32/drive
@@ -86,6 +94,9 @@
                 /starting_procedure/right_turn_indicator
                 /lane_control/right_turn_indicator" />
 
-    <node name="pass_control" type="pass_control" pkg="selfie" />
+
+    <node name="pass_control" type="pass_control" pkg="selfie">
+      <param name="num_parking_maneuvers" value="$(arg num_parking_maneuvers)" />
+    </node>
   </group>
 </launch>
