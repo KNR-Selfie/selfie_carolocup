@@ -50,7 +50,7 @@ bool Parking::init()
 
 void Parking::manager_init()
 {
-  ROS_WARN("goal set!!!");
+  ROS_INFO("set!!!");
   min_spot_lenght = (*search_server_.acceptNewGoal()).min_spot_lenght;
 //  goal_set = true;
 }
@@ -60,11 +60,11 @@ void Parking::manager(const selfie_msgs::PolygonArray &msg)
   // to save cpu time just do nothing when new scan comes
  if(!search_server_.isActive())
   {
-    ROS_INFO_THROTTLE(1,"server is not active!");
+  //  ROS_DEBUG_THROTTLE(1,"server is not active!");
     return;
   }
   
-  ROS_INFO("ok");
+ // ROS_INFO("ok");
   if(state == planning_failed)
   {
     /*
@@ -72,7 +72,7 @@ void Parking::manager(const selfie_msgs::PolygonArray &msg)
     state_msg.data = state;
     parking_state_pub.publish(state_msg);
 */
-    ROS_WARN("recovery after failed planning");
+   // ROS_WARN("recovery after failed planning");
     reset();
     ros::Duration(1).sleep();
     state = searching;
@@ -88,18 +88,18 @@ void Parking::manager(const selfie_msgs::PolygonArray &msg)
   {
     case searching:
     {
-      ROS_INFO("search");
+      ROS_DEBUG("searching for a place");
       planning_error_counter = 0;
       search(msg);
       bool place_found = find_free_place();
-      if(place_found && debug_mode)
-        ROS_INFO("place in range of lidar!!");
+   //   if(place_found && debug_mode)
+   //     ROS_INFO("place in range of lidar!!");
       float dist = 9999;
       if(place_found)
       {
         first_free_place.visualize(point_pub);
         dist = get_dist_from_first_free_place();
-        ROS_INFO("distance_to_first_place: %f", dist);
+      //  ROS_INFO("distance_to_first_place: %f", dist);
       }
       feedback_msg.distance_to_first_place = dist;
       if(place_found && dist <= distance_to_stop)
@@ -108,7 +108,7 @@ void Parking::manager(const selfie_msgs::PolygonArray &msg)
         state = planning;
         display_free_place();
         planning_scan_counter = 0;
-        ROS_WARN( "state switched to planning");
+        ROS_DEBUG( "state switched to planning");
       }
       else
         feedback_msg.info = "place too far";
@@ -132,12 +132,12 @@ void Parking::manager(const selfie_msgs::PolygonArray &msg)
           for_planning.push_back(first_free_place);
           print_planning_stats();
           ++planning_scan_counter;
-          ROS_INFO("scan ok");
+         // ROS_INFO("scan ok");
         }
       }// place ok, waiting for the next scan
       else if(planning_scan_counter >= scans_taken)
       {
-        ROS_WARN("getting exact dimensions\n");
+      //  ROS_WARN("getting exact dimensions\n");
         // ros::Duration(0.5).sleep();
         // takes the vector of laser scans and aproximates real parking place dimensions
         get_exact_measurements();
@@ -147,13 +147,13 @@ void Parking::manager(const selfie_msgs::PolygonArray &msg)
         state = parking;
         first_free_place.print_box_dimensions();
         send_goal();
-        ROS_WARN("state swiched to parking");  
+        ROS_DEBUG("search action finished");  
       }//end place was ok, send result
 
       if(planning_error_counter >= scans_taken)
       {
         feedback_msg.info = "error occured, place is too small, move forward!!";
-        ROS_FATAL("place appeared to be to small for Selfie");
+        ROS_DEBUG("place appeared to be to small for Selfie");
         feedback_msg.distance_to_first_place = get_dist_from_first_free_place();
         search_server_.publishFeedback(feedback_msg);
 
@@ -182,7 +182,7 @@ void Parking::print_planning_stats()
   float avg_x = sum_x/for_planning.size();
   float avg_y = sum_y/for_planning.size();
 
-  ROS_INFO("avg bottom left: ( %f ,  %f )", avg_x, avg_y);
+ // ROS_INFO("avg bottom left: ( %f ,  %f )", avg_x, avg_y);
   return;
 }
 
@@ -190,7 +190,7 @@ bool Parking::find_free_place()
 {
   if(boxes_on_the_right_side.size() < 2)
   {
-    ROS_WARN("REJECTED");
+   // ROS_WARN("REJECTED");
     return false;
 
   }
@@ -211,8 +211,6 @@ bool Parking::find_free_place()
     }
     if(state == planning)
     {
-      if(visualization_type >= 3)
-        ROS_WARN("error, place too small!!!!");
       ++planning_error_counter;
     }
 
@@ -365,7 +363,7 @@ void Parking::search(const selfie_msgs::PolygonArray &msg)
      Box temp_box(polygon);
      min_x = temp_box.top_left.x;
      this->boxes_on_the_right_side.push_back(temp_box);
-     ROS_INFO("box_created");
+    // ROS_INFO("box_created");
     }
       //now we reset, but later
 
