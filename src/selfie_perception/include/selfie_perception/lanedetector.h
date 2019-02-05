@@ -17,14 +17,17 @@
 #include <boost/numeric/ublas/lu.hpp>
 #include <vector>
 #include <stdexcept>
+#include <std_srvs/Empty.h>
 
 #include <visualization_msgs/Marker.h>
+#include <std_msgs/Float32.h>
 
 class LaneDetector
 {
   public:
 	LaneDetector(const ros::NodeHandle &nh, const ros::NodeHandle &pnh);
 	~LaneDetector();
+	bool resetVisionCallback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 	bool init();
 
   private:
@@ -33,6 +36,8 @@ class LaneDetector
 	image_transport::ImageTransport it_;
 	image_transport::Subscriber image_sub_;
 	ros::Publisher lanes_pub_;
+	ros::Publisher intersection_pub_;
+	ros::Publisher starting_line_pub_;
 
 	cv::Size topview_size_;
 	cv::Mat world2cam_;
@@ -69,6 +74,9 @@ class LaneDetector
 	int left_line_index_;
 	int center_line_index_;
 	int right_line_index_;
+	bool short_left_line_;
+	bool short_center_line_;
+	bool short_right_line_;
 
 	void imageCallback(const sensor_msgs::ImageConstPtr &msg);
 	void computeTopView();
@@ -108,6 +116,7 @@ class LaneDetector
 	void generatePoints();
 	void removeHorizontalLines();
 	std::vector<cv::Point2f> createOffsetLine(std::vector<float> coeff, float offset);
+	void detectStartAndIntersectionLine();
 
 	float min_length_search_line_;
 	float min_length_lane_;
@@ -117,12 +126,14 @@ class LaneDetector
 	float right_lane_width_;
 
 	std::string config_file_;
-	float binary_treshold_;
 	bool debug_mode_;
 	float max_mid_line_distance_;
 	float max_mid_line_gap_;
-	bool init_imageCallback_;
 	float nominal_center_line_Y_;
 	float points_density_;
 	int poly_nDegree_;
+	bool init_imageCallback_;
+	int treshold_block_size_;
+	float real_window_size_;
+	int threshold_c_;
 };

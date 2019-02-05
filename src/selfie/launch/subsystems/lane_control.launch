@@ -1,0 +1,36 @@
+<launch>
+  <node name="pid_controller" pkg="pid" type="controller" >
+    <param name="upper_limit" value="0.785" />
+    <param name="lower_limit" value="-0.785" />
+    <param name="windup_limit" value="10" />
+
+    <param name="Kp" value="2.0" />
+    <param name="Kd" value="0.01" />
+
+    <remap from="state" to="combined_offset" />
+    <remap from="control_effort" to="steering_angle" />
+  </node>
+
+  <node name="change_lane" pkg="selfie_control" type="change_lane" >
+    <param name="lane_width" value="0.4" />
+    <param name="error_margin" value="0.01" />
+
+    <remap from="target_offset" to="setpoint" />
+  </node>
+
+  <node name="offset_combiner" pkg="selfie_control" type="offset_combiner.py" />
+
+  <node name="cmd_converter" type="cmd_converter.py" pkg="selfie_control" />
+
+  <node name="const_speed" type="const_float64.py" pkg="selfie_control">
+    <param name="topic" value="max_speed" />
+    <param name="value" value="3.0" />
+  </node>
+
+  <node name="speed_limit" type="min_float64.py" pkg="selfie_control">
+    <param name="in_topic1" value="max_speed" />
+    <param name="in_topic2" value="speed_limit" />
+    <param name="out_topic" value="target_speed" />
+    <param name="default_value" value="100" />
+  </node>
+</launch>
