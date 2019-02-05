@@ -51,13 +51,15 @@ if __name__ == '__main__':
     CLC.fraction = rospy.get_param('~fraction', 0.3)
     CLC.threshold_normal = rospy.get_param('~thresh_normal', 3)
     CLC.threshold_anormal = rospy.get_param('~thresh_anormal', 3)
+    CLC.tests = rospy.get_param('~tests', False)
 
     rospy.loginfo("Parameters:")
     rospy.loginfo("border_x = %f, border_y = %f",CLC.border_distance_x, CLC.border_distance_y)
     rospy.loginfo("fraction = %f", CLC.fraction)
     rospy.loginfo("threshold_normal = %f threshold_anormal = %f", CLC.threshold_normal, CLC.threshold_anormal)
 
-    CLC.create_client()
+    if CLC.tests == False:
+      CLC.create_client()
     
     while not rospy.is_shutdown():
       if CLC.get_call == 0:

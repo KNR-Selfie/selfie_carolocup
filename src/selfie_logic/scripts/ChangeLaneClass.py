@@ -47,6 +47,8 @@ class ChangeLaneClass:
         self.threshold_normal = 2
         self.threshold_anormal = 2
 
+        self.tests = False
+
     def create_client(self):
         self.client = actionlib.SimpleActionClient('change_lane', selfie_control.msg.ChangeLaneAction)
         rospy.loginfo("Wait for connecting to server")
@@ -138,9 +140,10 @@ class ChangeLaneClass:
                 self.once_detected += 1
             else:
                 self.start_distance = self.distance
-                goal = selfie_control.msg.ChangeLaneGoal(left_lane=True)
-                self.client.send_goal(goal)
-                self.client.wait_for_result()
+                if self.tests == False:
+                    goal = selfie_control.msg.ChangeLaneGoal(left_lane=True)
+                    self.client.send_goal(goal)
+                    self.client.wait_for_result()
                 self.once_detected = 0
                 self.normal_drive = 1
         #right lane and no points in front 
@@ -160,10 +163,10 @@ class ChangeLaneClass:
                 self.get_change_distance = 1
             elif self.get_change_distance ==1:
                 if self.distance-self.start_back_distance>self.change_distance*self.fraction:
-                     
-                    goal = selfie_control.msg.ChangeLaneGoal(left_lane=False)
-                    self.client.send_goal(goal)
-                    self.client.wait_for_result()
+                    if self.tests == False:
+                        goal = selfie_control.msg.ChangeLaneGoal(left_lane=False)
+                        self.client.send_goal(goal)
+                        self.client.wait_for_result()
 
                     self.normal_drive = 0
                     self.once_detected = 0
