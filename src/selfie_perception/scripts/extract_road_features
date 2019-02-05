@@ -24,9 +24,7 @@ def road_markings_callback(msg):
 
     slope = c_poly.deriv()(c_x)
     theta = atan(slope)
-    curvature = (abs(c_poly.deriv().deriv()(c_x))/
-    (1+c_poly.deriv()(c_x)**2)**(3.0/2.0)
-    )
+    curvature = abs(c_poly.deriv().deriv()(c_x)) / (1+c_poly.deriv()(c_x)**2)**1.5
 
     if atan2(c_y, x_shifted(c_x)) - theta > 0:
         c_dist = -c_dist
