@@ -44,7 +44,7 @@ if __name__ == '__main__':
     obstacles_sub = rospy.Subscriber('obstacles', PolygonArray, obstacles_callback, queue_size=1)
     distance_sub = rospy.Subscriber('distance', Float32, distance_callback, queue_size=1)
     
-    #change_lane_pub = rospy.Publisher('change_lane_status', UInt16, queue_size=1)
+    change_lane_pub = rospy.Publisher('box_right', UInt16, queue_size=1)
    
     CLC.border_distance_x = rospy.get_param('~border_x', 1.1)
     CLC.border_distance_y = rospy.get_param('~border_y', 0.7)
@@ -69,6 +69,6 @@ if __name__ == '__main__':
       CLC.change_lane_procedure()
       CLC.get_call = 0
       #rospy.loginfo("T: %d. La: %d",CLC.trybe, CLC.right_lane)
-      #change_lane_pub.publish(CLC.change_lane_status)
-      rospy.sleep(0.1)
+      change_lane_pub.publish(CLC.box_right)
+      rospy.sleep(0.01)
       #rospy.spin()
