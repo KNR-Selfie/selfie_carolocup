@@ -1,5 +1,4 @@
 <launch>
-  
   <node pkg="selfie_control" type="offset_combiner.py" name="selfie_offset_combiner">
   </node>
 

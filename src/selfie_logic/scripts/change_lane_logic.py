@@ -34,9 +34,7 @@ def obstacles_callback(msg):
     for box_nr in range (len(msg.polygons)-1, 0, -1):    
         CLC.polygons.append(msg.polygons[box_nr])
 
-def offset_callback(msg):
-  #save distance from stm32
-  CLC.center_dis = msg.data
+
 
     
 if __name__ == '__main__':
@@ -45,14 +43,19 @@ if __name__ == '__main__':
     road_markings_sub = rospy.Subscriber('road_markings', RoadMarkings, road_markings_callback, queue_size=1)
     obstacles_sub = rospy.Subscriber('obstacles', PolygonArray, obstacles_callback, queue_size=1)
     distance_sub = rospy.Subscriber('distance', Float32, distance_callback, queue_size=1)
-    offset_sub = rospy.Subscriber('position_offset', Float64, offset_callback, queue_size=1)
-   
+    
     #change_lane_pub = rospy.Publisher('change_lane_status', UInt16, queue_size=1)
    
-    CLC.border_distance_x = rospy.get_param('~border_x')
-    CLC.border_distance_y = rospy.get_param('~border_y')
-    CLC.fraction = rospy.get_param('~fraction', 0.1)
-    rospy.loginfo("border_x = %f, border_y = %f, fraction = %f",CLC.border_distance_x, CLC.border_distance_y, CLC.fraction)
+    CLC.border_distance_x = rospy.get_param('~border_x', 1.1)
+    CLC.border_distance_y = rospy.get_param('~border_y', 0.7)
+    CLC.fraction = rospy.get_param('~fraction', 0.3)
+    CLC.threshold_normal = rospy.get_param('~thresh_normal', 3)
+    CLC.threshold_anormal = rospy.get_param('~thresh_anormal', 3)
+
+    rospy.loginfo("Parameters:")
+    rospy.loginfo("border_x = %f, border_y = %f",CLC.border_distance_x, CLC.border_distance_y)
+    rospy.loginfo("fraction = %f", CLC.fraction)
+    rospy.loginfo("threshold_normal = %f threshold_anormal = %f", CLC.threshold_normal, CLC.threshold_anormal)
 
     CLC.create_client()
     

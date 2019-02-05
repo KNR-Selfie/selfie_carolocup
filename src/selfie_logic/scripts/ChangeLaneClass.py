@@ -8,10 +8,7 @@ from scipy.optimize import minimize
 from numpy.polynomial.polynomial import Polynomial
 
 class ChangeLaneClass:
-    def __init__(self):
-        #right_lane =1  we are on right, right_lane = 0 we are on left
-        self.right_lane = 1
-        
+    def __init__(self):        
         #distance from encoders
         self.distance = 0
 
@@ -24,29 +21,31 @@ class ChangeLaneClass:
 
         #obstacles polygon
         self.polygons = []
-
-        #points on right lane
-        self.points_front = 0
-        self.points_right = 0
         
         self.start_distance = 0
+        self.start_back_distance = 0
         self.change_distance = 0
 
         #distance from center lane
         self.center_dis = 0
         
-        self.get_call = 0
         self.once_detected =0
 
         self.get_change_distance = 0
-        self.get_start_distance =0
 
         self.border_distance_x = 1.1
         self.border_distance_y = 0.7
 
         self.fraction = 0.1
 
-        self.change_lane_status = 0
+        self.normal_drive = 0
+
+        self.box_right = 0
+
+        self.get_call = 0
+
+        self.threshold_normal = 2
+        self.threshold_anormal = 2
 
     def create_client(self):
         self.client = actionlib.SimpleActionClient('change_lane', selfie_control.msg.ChangeLaneAction)
@@ -96,7 +95,7 @@ class ChangeLaneClass:
                 tmp_right +=1           
 
         if tmp_right>2:
-            self.points_right +=1
+            self.box_right +=1
 
 
 
@@ -113,80 +112,65 @@ class ChangeLaneClass:
     def check_polygons(self):
         #checking if we have obstacle in front
         #self.center_dis = self.get_offset(self.lookahead_c,self.c_poly)
-        if self.center_dis<0:
-            self.right_lane = 1
-        else:
-            self.right_lane = 0
+        
 
         #if we are on right lane and want to detect obstacle
         #check each polygon
         if (len(self.polygons)==0):
             return 0
 
-        self.points_right = 0
+        self.box_right = 0
 
         for box_nr in range (len(self.polygons)-1, 0, -1):   
             polygon_in_border = self.check_polygon_border(self.polygons[box_nr])
             if polygon_in_border==1:
-                self.check_polygon(self.polygons[box_nr])
-                #rospy.loginfo("Used")
-            #else:
-            #    rospy.loginfo("Rejected")
-
-            
+                self.check_polygon(self.polygons[box_nr])            
 
     def change_lane_procedure(self):
         #main methode to change lane
 
         self.check_polygons()
-        rospy.loginfo("Lane: %d Pts: %d", self.right_lane, self.points_right)
+        #rospy.loginfo("Pts: %d", self.box_right)
 
-        #if we are on right lane and want to change it
-        if self.right_lane==1 and self.points_right >0:
-            
-            if self.once_detected <2:
+        #right lane and points in front - start changing
+        if self.normal_drive ==0 and self.box_right>0:
+            if self.once_detected < self.threshold_normal:
                 self.once_detected += 1
             else:
-                self.once_detected= 0 
-                self.get_start_distance=1
                 self.start_distance = self.distance
-                rospy.loginfo("zmieniam")
                 goal = selfie_control.msg.ChangeLaneGoal(left_lane=True)
                 self.client.send_goal(goal)
                 self.client.wait_for_result()
                 self.once_detected = 0
-                rospy.loginfo("zmienilem")
-                #result = self.client.get_result()
-
-        elif self.right_lane==1 and self.points_right ==0:
+                self.normal_drive = 1
+        #right lane and no points in front 
+        elif self.normal_drive ==0 and self.box_right==0:
             self.once_detected =0
-
-        #if we are on left lane
-        elif self.right_lane==0 and self.points_right==0:
-            
-            if self.once_detected <2:
+        #left lane and some points on right
+        elif self.normal_drive ==1 and self.box_right>0:
+            self.once_detected = 0
+            self.get_change_distance = 0
+        #left lane and no points on right - start changing back
+        elif self.normal_drive ==1 and self.box_right ==0:
+            if self.once_detected < self.threshold_anormal:
                 self.once_detected += 1
             elif self.get_change_distance ==0:
                 self.change_distance = self.distance - self.start_distance
-                self.start_distance = self.distance
+                self.start_back_distance = self.distance
                 self.get_change_distance = 1
             elif self.get_change_distance ==1:
-                if self.distance-self.start_distance>self.change_distance*self.fraction:
-                    self.once_detected= 0 
-                    self.get_change_distance = 0
-                    self.get_start_distance =0
-                    rospy.loginfo("zmieniam %f %f",self.distance-self.start_distance, self.change_distance*self.fraction )
+                if self.distance-self.start_back_distance>self.change_distance*self.fraction:
+                     
                     goal = selfie_control.msg.ChangeLaneGoal(left_lane=False)
                     self.client.send_goal(goal)
                     self.client.wait_for_result()
-                    self.once_detected = 0
-                else:
-                    rospy.loginfo("czekam %f %f",self.distance-self.start_distance, self.change_distance*self.fraction )
-                  
 
-        elif self.right_lane==0 and self.points_right >0:
-            self.once_detected = 0
-            self.get_change_distance = 0
+                    self.normal_drive = 0
+                    self.once_detected = 0
+                    self.get_change_distance = 0
+                
+
+
                 
     
     
