@@ -41,10 +41,10 @@ class ChangeLaneClass:
         self.get_change_distance = 0
         self.get_start_distance =0
 
-        self.border_distance_x = 0.8
+        self.border_distance_x = 1.1
         self.border_distance_y = 0.7
 
-        self.fraction = 1.0
+        self.fraction = 0.1
 
         self.change_lane_status = 0
 
@@ -112,7 +112,7 @@ class ChangeLaneClass:
         
     def check_polygons(self):
         #checking if we have obstacle in front
-        self.center_dis = self.get_offset(self.lookahead_c,self.c_poly)
+        #self.center_dis = self.get_offset(self.lookahead_c,self.c_poly)
         if self.center_dis<0:
             self.right_lane = 1
         else:
@@ -133,31 +133,33 @@ class ChangeLaneClass:
             #else:
             #    rospy.loginfo("Rejected")
 
+            
+
     def change_lane_procedure(self):
         #main methode to change lane
 
         self.check_polygons()
-        #rospy.loginfo("Lane: %d Pts: %d", self.right_lane, self.points_right)
+        rospy.loginfo("Lane: %d Pts: %d", self.right_lane, self.points_right)
 
         #if we are on right lane and want to change it
         if self.right_lane==1 and self.points_right >0:
             
             if self.once_detected <2:
                 self.once_detected += 1
-            elif (self.get_start_distance==0):
+            else:
                 self.once_detected= 0 
                 self.get_start_distance=1
                 self.start_distance = self.distance
+                rospy.loginfo("zmieniam")
                 goal = selfie_control.msg.ChangeLaneGoal(left_lane=True)
                 self.client.send_goal(goal)
                 self.client.wait_for_result()
-                self.change_lane_status = 1
                 self.once_detected = 0
+                rospy.loginfo("zmienilem")
                 #result = self.client.get_result()
 
         elif self.right_lane==1 and self.points_right ==0:
             self.once_detected =0
-            self.change_lane_status = 0
 
         #if we are on left lane
         elif self.right_lane==0 and self.points_right==0:
@@ -173,16 +175,16 @@ class ChangeLaneClass:
                     self.once_detected= 0 
                     self.get_change_distance = 0
                     self.get_start_distance =0
+                    rospy.loginfo("zmieniam %f %f",self.distance-self.start_distance, self.change_distance*self.fraction )
                     goal = selfie_control.msg.ChangeLaneGoal(left_lane=False)
                     self.client.send_goal(goal)
                     self.client.wait_for_result()
-                    self.change_lane_status = 4
                     self.once_detected = 0
                 else:
-                    self.change_lane_status = 3
+                    rospy.loginfo("czekam %f %f",self.distance-self.start_distance, self.change_distance*self.fraction )
+                  
 
         elif self.right_lane==0 and self.points_right >0:
-            self.change_lane_status = 2
             self.once_detected = 0
             self.get_change_distance = 0
                 

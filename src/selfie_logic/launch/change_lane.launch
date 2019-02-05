@@ -1,15 +1,11 @@
 <launch>
-  <node pkg="selfie_logic" type="change_lane_logic.py" name="change_lane_logic">
-    <param name="border_x" value="0.8"/>
-    <param name="border_y" value="0.7" />
-    <param name="fraction" value="0.5"/> 
+  
+  <node pkg="selfie_control" type="offset_combiner.py" name="selfie_offset_combiner">
   </node>
-
-
 
   <node pkg="selfie_control" type="change_lane" name="change_lane">
     <param name="lane_width" value="0.4"/>
-    <param name="error_margin" value="0.35" />
+    <param name="error_margin" value="0.2" />
   </node>
 
   <node pkg="selfie_perception" type="detect_obstacles" name="selfie_obstacle_detector">

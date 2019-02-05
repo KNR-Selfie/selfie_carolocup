@@ -34,19 +34,24 @@ def obstacles_callback(msg):
     for box_nr in range (len(msg.polygons)-1, 0, -1):    
         CLC.polygons.append(msg.polygons[box_nr])
 
+def offset_callback(msg):
+  #save distance from stm32
+  CLC.center_dis = msg.data
+
     
 if __name__ == '__main__':
     rospy.init_node('change_lane_logic')
 
-    road_markings_sub = rospy.Subscriber('vision/road_markings', RoadMarkings, road_markings_callback, queue_size=1)
-    road_markings_sub = rospy.Subscriber('obstacles', PolygonArray, obstacles_callback, queue_size=1)
-    road_markings_sub = rospy.Subscriber('stm32/distance', Float32, distance_callback, queue_size=1)
+    road_markings_sub = rospy.Subscriber('road_markings', RoadMarkings, road_markings_callback, queue_size=1)
+    obstacles_sub = rospy.Subscriber('obstacles', PolygonArray, obstacles_callback, queue_size=1)
+    distance_sub = rospy.Subscriber('distance', Float32, distance_callback, queue_size=1)
+    offset_sub = rospy.Subscriber('position_offset', Float64, offset_callback, queue_size=1)
    
-    change_lane_pub = rospy.Publisher('change_lane_status', UInt16, queue_size=1)
+    #change_lane_pub = rospy.Publisher('change_lane_status', UInt16, queue_size=1)
    
     CLC.border_distance_x = rospy.get_param('~border_x')
     CLC.border_distance_y = rospy.get_param('~border_y')
-    CLC.fraction = rospy.get_param('~fraction', 1.0)
+    CLC.fraction = rospy.get_param('~fraction', 0.1)
     rospy.loginfo("border_x = %f, border_y = %f, fraction = %f",CLC.border_distance_x, CLC.border_distance_y, CLC.fraction)
 
     CLC.create_client()
@@ -61,6 +66,6 @@ if __name__ == '__main__':
       CLC.change_lane_procedure()
       CLC.get_call = 0
       #rospy.loginfo("T: %d. La: %d",CLC.trybe, CLC.right_lane)
-      change_lane_pub.publish(CLC.change_lane_status)
+      #change_lane_pub.publish(CLC.change_lane_status)
       rospy.sleep(0.1)
       #rospy.spin()
