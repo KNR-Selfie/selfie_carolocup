@@ -59,6 +59,7 @@ def starting_line_callback(msg):
         else:
             rospy.loginfo('Parking maneuver failed')
 
+        reset_vision()
         pass_control('/lane_control')
     else:
         rospy.loginfo('Parking spot not found, aborting')

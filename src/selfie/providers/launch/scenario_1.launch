@@ -6,7 +6,7 @@
   <group ns="parking">
     <remap from="/odom" to="/odometry/odom" />
     <remap from="/obstacles" to="/obstacle_detection/obstacles" />
-    <remap from="/drive" to="/stm32/drive" />
+    <remap from="/drive" to="/parking/drive" />
     <remap from="/left_turn_indicator" to="/stm32/left_turn_indicator" />
     <remap from="/right_turn_indicator" to="/stm32/right_turn_indicator" />
 
